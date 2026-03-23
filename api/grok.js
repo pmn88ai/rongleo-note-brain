@@ -24,7 +24,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { model = 'grok-2-latest', messages, max_tokens } = req.body;
+    const { model = 'grok-2', messages, max_tokens } = req.body;
 
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'messages array required' });

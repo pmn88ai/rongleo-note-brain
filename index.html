@@ -1,0 +1,2355 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DISTILL — Bộ Não Thứ Hai</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #181818;
+    --border: #2a2a2a;
+    --accent: #c8f135;
+    --accent2: #35f1c8;
+    --muted: #555;
+    --text: #e8e8e8;
+    --text-dim: #888;
+    --danger: #ff4545;
+    --warning: #f1a135;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    overflow: hidden;
+  }
+
+  header {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg);
+    position: relative;
+    z-index: 10;
+    gap: 12px;
+  }
+
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 4px; color: var(--accent);
+    text-transform: uppercase; white-space: nowrap;
+  }
+  .logo span { color: var(--text-dim); }
+
+  .header-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+  .sync-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--muted); display: inline-block;
+    margin-right: 2px; transition: background 0.3s;
+  }
+  .sync-dot.ok { background: var(--accent); }
+  .sync-dot.err { background: var(--danger); }
+  .sync-dot.syncing { background: var(--warning); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .btn-key {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px; letter-spacing: 1px;
+    padding: 6px 11px;
+    border: 1px solid var(--border);
+    background: transparent; color: var(--text-dim);
+    cursor: pointer; transition: all 0.15s;
+    border-radius: 4px; white-space: nowrap;
+  }
+  .btn-key:hover { border-color: var(--accent); color: var(--accent); }
+
+  .app {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    height: calc(100vh - 49px);
+    overflow: hidden;
+  }
+
+  .textarea-wrap { position: relative; overflow: hidden; }
+
+  textarea#raw-input {
+    width: 100%; height: 100%;
+    background: var(--bg); border: none; outline: none; resize: none;
+    color: var(--text); font-family: 'Space Mono', monospace;
+    font-size: 13px; line-height: 1.7;
+    padding: 28px 32px; caret-color: var(--accent);
+  }
+  textarea#raw-input::placeholder { color: var(--muted); font-style: italic; }
+
+  .char-count {
+    position: absolute; bottom: 12px; right: 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px; color: var(--muted); pointer-events: none;
+  }
+
+  .actions {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    display: flex; gap: 8px;
+  }
+
+  .btn {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px; font-weight: 700;
+    padding: 10px 16px; border: none; cursor: pointer;
+    transition: all 0.15s; border-radius: 4px;
+    letter-spacing: 0.5px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--accent); color: #0a0a0a; flex: 1; }
+  .btn-primary:hover { background: #d4ff3d; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-secondary { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border); }
+  .btn-secondary:hover { color: var(--text); border-color: var(--text-dim); }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid transparent; }
+  .btn-danger:hover { border-color: var(--danger); }
+
+  .loading-bar { height: 2px; background: var(--border); position: relative; overflow: hidden; }
+  .loading-bar.active::after {
+    content: ''; position: absolute; left: -40%; width: 40%; height: 100%;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: loading 1s infinite;
+  }
+  @keyframes loading { to { left: 100%; } }
+
+  .result-panel {
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    padding: 18px 20px;
+    min-height: 0; overflow-y: auto; max-height: 280px;
+  }
+  .result-panel.hidden { display: none; }
+  .result-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px; letter-spacing: 3px;
+    color: var(--accent); text-transform: uppercase; margin-bottom: 14px;
+  }
+  .result-grid { display: grid; gap: 12px; }
+  .result-field-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px; letter-spacing: 2px;
+    color: var(--text-dim); text-transform: uppercase; margin-bottom: 4px;
+  }
+  .result-field-value { font-size: 13px; line-height: 1.6; color: var(--text); }
+  .result-field-value ul { list-style: none; padding: 0; }
+  .result-field-value ul li::before { content: "-> "; color: var(--accent); }
+  .result-field-value ul li { margin-bottom: 2px; }
+  .core-idea-text { font-weight: 700; font-size: 15px; color: var(--accent2); }
+
+  .type-badge {
+    display: inline-block; font-family: 'Space Mono', monospace;
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 2px; font-weight: 700;
+  }
+  .type-c0 { background: rgba(200,241,53,0.15); color: #c8f135; border: 1px solid rgba(200,241,53,0.3); }
+  .type-c1 { background: rgba(53,241,200,0.15); color: #35f1c8; border: 1px solid rgba(53,241,200,0.3); }
+  .type-c2 { background: rgba(241,161,53,0.15); color: #f1a135; border: 1px solid rgba(241,161,53,0.3); }
+  .type-c3 { background: rgba(168,53,241,0.15); color: #a835f1; border: 1px solid rgba(168,53,241,0.3); }
+  .type-c4 { background: rgba(53,161,241,0.15); color: #35a1f1; border: 1px solid rgba(53,161,241,0.3); }
+  .type-c5 { background: rgba(241,53,161,0.15); color: #f135a1; border: 1px solid rgba(241,53,161,0.3); }
+  .type-c6 { background: rgba(241,241,53,0.15); color: #e0e035; border: 1px solid rgba(241,241,53,0.3); }
+  .type-c7 { background: rgba(53,241,53,0.15);  color: #35f135; border: 1px solid rgba(53,241,53,0.3); }
+
+  .keywords-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+  .keyword-tag {
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    padding: 2px 8px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 2px; color: var(--text-dim);
+  }
+
+  .sidebar {
+    display: grid;
+    grid-template-rows: auto auto auto auto 1fr;
+    overflow: hidden; background: var(--surface);
+  }
+  .sidebar-header {
+    padding: 13px 18px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .sidebar-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px; letter-spacing: 3px;
+    color: var(--text-dim); text-transform: uppercase;
+  }
+  .entry-count { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--accent); }
+
+  .search-bar {
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .search-bar input {
+    width: 100%; background: var(--surface2);
+    border: 1px solid var(--border); color: var(--text);
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    padding: 7px 10px; border-radius: 4px; outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-bar input:focus { border-color: var(--accent); }
+  .search-bar input::placeholder { color: var(--muted); }
+
+  .filter-bar {
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+    display: flex; gap: 5px; flex-wrap: wrap; background: var(--bg);
+  }
+  .filter-chip {
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    padding: 3px 9px; border-radius: 2px; cursor: pointer;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--text-dim); transition: all 0.1s; letter-spacing: 1px;
+  }
+  .filter-chip:hover { color: var(--text); border-color: var(--text-dim); }
+  .filter-chip.active { background: var(--accent); color: #0a0a0a; border-color: var(--accent); }
+
+  .ideas-list { overflow-y: auto; padding: 6px 0; }
+  .ideas-list::-webkit-scrollbar { width: 4px; }
+  .ideas-list::-webkit-scrollbar-track { background: transparent; }
+  .ideas-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .idea-item {
+    padding: 11px 18px; cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s; position: relative;
+  }
+  .idea-item:hover { background: var(--surface2); }
+  .idea-item.active { background: var(--surface2); border-left: 2px solid var(--accent); padding-left: 16px; }
+  .idea-item-time { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); margin-bottom: 3px; }
+  .idea-item-title {
+    font-size: 13px; font-weight: 600; color: var(--text);
+    line-height: 1.4; margin-bottom: 4px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 52px;
+  }
+  .idea-item-actions {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    display: none; gap: 3px;
+  }
+  .idea-item:hover .idea-item-actions { display: flex; }
+
+  .mini-btn {
+    font-size: 10px; padding: 3px 6px;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text-dim); cursor: pointer;
+    border-radius: 3px; font-family: 'Space Mono', monospace; transition: all 0.1s;
+  }
+  .mini-btn:hover { color: var(--text); }
+  .mini-btn.del:hover { color: var(--danger); border-color: var(--danger); }
+
+  /* Upgrade 3: attachment badge in list */
+  .attach-badge { font-size: 11px; line-height: 1; opacity: 0.75; cursor: default; }
+
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100%; color: var(--muted);
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    text-align: center; padding: 32px; line-height: 1.8;
+  }
+
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85); z-index: 100;
+    align-items: center; justify-content: center; padding: 24px;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; width: 100%; max-width: 680px; max-height: 88vh;
+    overflow: hidden; display: grid; grid-template-rows: auto 1fr auto;
+  }
+  .modal-header {
+    padding: 18px 22px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 14px;
+  }
+  .modal-title { font-size: 17px; font-weight: 700; line-height: 1.4; color: var(--accent2); }
+  .modal-close {
+    background: none; border: 1px solid var(--border); color: var(--text-dim);
+    width: 28px; height: 28px; cursor: pointer; font-size: 13px;
+    border-radius: 4px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; transition: all 0.1s;
+  }
+  .modal-close:hover { color: var(--text); border-color: var(--text-dim); }
+  .modal-body { overflow-y: auto; padding: 22px; display: grid; gap: 18px; }
+  .modal-footer {
+    padding: 14px 22px; border-top: 1px solid var(--border);
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+
+  .raw-text {
+    font-family: 'Space Mono', monospace; font-size: 12px;
+    color: var(--text-dim); background: var(--bg);
+    padding: 14px; border-radius: 4px; border: 1px solid var(--border);
+    line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+    max-height: 180px; overflow-y: auto;
+  }
+
+  .type-select {
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); font-family: 'Space Mono', monospace;
+    font-size: 12px; padding: 5px 10px; border-radius: 4px;
+    outline: none; cursor: pointer; transition: border-color 0.15s;
+  }
+  .type-select:focus { border-color: var(--accent); }
+
+  .small-modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; width: 100%; max-width: 460px;
+    padding: 26px; max-height: 88vh; overflow-y: auto;
+  }
+  .small-modal h3 {
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    letter-spacing: 3px; color: var(--accent);
+    text-transform: uppercase; margin-bottom: 14px;
+  }
+  .small-modal p { font-size: 12px; color: var(--text-dim); margin-bottom: 14px; line-height: 1.5; }
+  .small-modal input {
+    width: 100%; background: var(--bg);
+    border: 1px solid var(--border); color: var(--text);
+    font-family: 'Space Mono', monospace; font-size: 12px;
+    padding: 10px 12px; border-radius: 4px; outline: none;
+    margin-bottom: 10px; transition: border-color 0.15s;
+  }
+  .small-modal input:focus { border-color: var(--accent); }
+
+  .cat-list { display: grid; gap: 6px; margin-bottom: 14px; }
+  .cat-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 4px;
+  }
+  .cat-item span { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--text); }
+  .cat-del-btn {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; font-size: 12px; padding: 2px 6px;
+    transition: color 0.1s; border-radius: 3px;
+  }
+  .cat-del-btn:hover { color: var(--danger); }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-family: 'Space Mono', monospace;
+    font-size: 12px; padding: 10px 20px; border-radius: 4px;
+    z-index: 300; opacity: 0; transition: all 0.25s; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--accent); color: var(--accent); }
+  .toast.error { border-color: var(--danger); color: var(--danger); }
+  .toast.warn { border-color: var(--warning); color: var(--warning); }
+  /* ══════════════════════════════════════════
+     IMAGE / LINK / INTENT SECTION
+  ══════════════════════════════════════════ */
+  .extra-inputs {
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    padding: 10px 16px;
+    display: grid; gap: 7px;
+  }
+  .extra-row {
+    display: flex; gap: 8px; align-items: center;
+  }
+  .btn-extra {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px; letter-spacing: 0.5px;
+    padding: 7px 12px;
+    background: var(--surface2); color: var(--text-dim);
+    border: 1px solid var(--border); border-radius: 4px;
+    cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-extra:hover { color: var(--text); border-color: var(--accent); }
+  .btn-extra:disabled { opacity: 0.5; cursor: not-allowed; }
+  .extra-status {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px; color: var(--accent2);
+    flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .link-input-field {
+    flex: 1; background: var(--bg);
+    border: 1px solid var(--border); color: var(--text);
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    padding: 7px 10px; border-radius: 4px; outline: none;
+    transition: border-color 0.15s;
+  }
+  .link-input-field:focus { border-color: var(--accent); }
+  .link-input-field::placeholder { color: var(--muted); }
+
+  /* Attachment preview queue */
+  #attach-preview { padding: 4px 0 2px; display: none; flex-direction: column; gap: 4px; }
+  #attach-preview.has-items { display: flex; }
+  .attach-preview-item {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    color: var(--text-dim); padding: 4px 8px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+  .attach-preview-item .attach-preview-icon { flex-shrink: 0; font-size: 12px; }
+  .attach-preview-item .attach-preview-name {
+    flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .attach-preview-remove {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; font-size: 11px; padding: 1px 4px;
+    border-radius: 2px; transition: color 0.1s; flex-shrink: 0;
+  }
+  .attach-preview-remove:hover { color: var(--danger); }
+
+  /* Intent detected badge */
+  .intent-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    padding: 3px 10px; border-radius: 2px;
+    background: rgba(241,161,53,0.15); color: var(--warning);
+    border: 1px solid rgba(241,161,53,0.3); letter-spacing: 1px;
+  }
+
+  /* Attachment display in modal */
+  .attachments-wrap { display: grid; gap: 8px; }
+  .attach-image {
+    width: 100%; max-height: 220px; object-fit: contain;
+    border-radius: 4px; border: 1px solid var(--border);
+    background: var(--bg); cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .attach-image:hover { opacity: 0.85; }
+  .attach-link {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 12px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; text-decoration: none; transition: border-color 0.15s;
+  }
+  .attach-link:hover { border-color: var(--accent); }
+  .attach-link-icon { font-size: 14px; flex-shrink: 0; }
+  .attach-link-text {
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    color: var(--accent2); overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
+  }
+  .attach-link-title {
+    font-size: 12px; color: var(--text-dim);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  /* Left panel needs one more row for extra-inputs */
+  .left-panel {
+    display: grid;
+    grid-template-rows: 1fr auto auto auto;
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .recall-panel {
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .recall-header {
+    padding: 10px 18px 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .recall-header-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px; letter-spacing: 3px;
+    color: var(--accent2); text-transform: uppercase; flex: 1;
+  }
+  .recall-input-row {
+    display: flex; gap: 6px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+  #recall-input {
+    flex: 1; background: var(--surface2);
+    border: 1px solid var(--border); color: var(--text);
+    font-family: 'Space Mono', monospace; font-size: 12px;
+    padding: 8px 11px; border-radius: 4px; outline: none;
+    transition: border-color 0.15s;
+  }
+  #recall-input:focus { border-color: var(--accent2); }
+  #recall-input::placeholder { color: var(--muted); }
+  .btn-recall {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px; font-weight: 700;
+    padding: 8px 14px;
+    background: var(--accent2); color: #0a0a0a;
+    border: none; border-radius: 4px; cursor: pointer;
+    transition: all 0.15s; white-space: nowrap;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .btn-recall:hover { background: #5ffada; transform: translateY(-1px); }
+  .btn-recall:active { transform: translateY(0); }
+  .btn-recall:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  #recall-results { overflow-y: auto; padding: 0; max-height: 200px; min-height: 60px; }
+  #recall-results::-webkit-scrollbar { width: 4px; }
+  #recall-results::-webkit-scrollbar-track { background: transparent; }
+  #recall-results::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .recall-empty {
+    padding: 22px 18px; text-align: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px; color: var(--muted); line-height: 1.8;
+  }
+  .recall-match {
+    padding: 10px 16px 10px 18px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: background 0.1s; position: relative;
+  }
+  .recall-match:hover { background: var(--surface2); }
+  .recall-match::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 2px; background: var(--accent2);
+  }
+  .recall-match-title {
+    font-size: 12px; font-weight: 700; color: var(--text);
+    margin-bottom: 3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .recall-match-reason {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px; color: var(--text-dim); line-height: 1.5;
+  }
+  .recall-suggestion {
+    padding: 12px 16px;
+    background: rgba(53,241,200,0.04);
+    border-top: 1px solid rgba(53,241,200,0.15);
+  }
+  .recall-suggestion-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px; letter-spacing: 2px;
+    color: var(--accent2); text-transform: uppercase; margin-bottom: 5px;
+  }
+  .recall-suggestion-text { font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+  .recall-insight {
+    padding: 12px 16px;
+    background: rgba(200,241,53,0.04);
+    border-top: 1px solid rgba(200,241,53,0.12);
+  }
+  .recall-insight-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px; letter-spacing: 2px;
+    color: var(--accent); text-transform: uppercase; margin-bottom: 5px;
+  }
+  .recall-insight-text { font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+  .recall-shared-kw {
+    display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;
+  }
+  .recall-kw-chip {
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    padding: 2px 7px;
+    background: rgba(53,241,200,0.12);
+    border: 1px solid rgba(53,241,200,0.25);
+    color: var(--accent2); border-radius: 2px;
+  }
+  mark.recall-highlight {
+    background: rgba(53,241,200,0.22);
+    color: var(--accent2);
+    border-radius: 2px; padding: 0 1px;
+    font-style: normal;
+  }
+  .recall-divider {
+    height: 4px; background: var(--border);
+    cursor: ns-resize; flex-shrink: 0; transition: background 0.15s;
+  }
+  .recall-divider:hover { background: var(--accent2); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">DISTILL <span>// bộ não thứ hai</span></div>
+  <div class="header-actions">
+    <span title="Trạng thái Firebase"><span class="sync-dot" id="sync-dot"></span></span>
+    <button class="btn-key" onclick="openBackupModal()">&#x2B07;&#x2B06; Backup</button>
+    <button class="btn-key" onclick="openPromptModal()">&#x1F9E0; Prompt</button>
+    <button class="btn-key" onclick="openCatModal()">&#x229E; Danh Mục</button>
+    <button class="btn-key" onclick="openApiKeyModal()">&#x2699; API KEY</button>
+  </div>
+</header>
+
+<div class="app">
+
+  <div class="left-panel">
+    <div class="textarea-wrap">
+      <textarea id="raw-input" placeholder="Dán bất cứ thứ gì vào đây... đoạn chat, ý tưởng, suy nghĩ lộn xộn, ghi chú giọng nói..." spellcheck="false"></textarea>
+      <div class="char-count" id="char-count">0 ký tự</div>
+    </div>
+
+    <div class="loading-bar" id="loading-bar"></div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="btn-distill" onclick="distillAndSave()">&#x26A1; Chắt Lọc &amp; Lưu</button>
+      <button class="btn btn-secondary" onclick="quickSaveRaw()">&#x1F4CB; Lưu Thô</button>
+      <button class="btn btn-danger" onclick="clearInput()">&#x1F5D1;</button>
+    </div>
+
+    <!-- ══ IMAGE & LINK SECTION ═══════════════════════════════ -->
+    <div class="extra-inputs" id="extra-inputs">
+      <div class="extra-row">
+        <button class="btn-extra" onclick="document.getElementById('img-file-input').click()" title="Upload ảnh ghi chú">&#x1F4F8; Upload Ảnh</button>
+        <input type="file" id="img-file-input" accept="image/*" style="display:none" onchange="handleImageUpload(this)" />
+        <span class="extra-status" id="img-status"></span>
+      </div>
+      <div class="extra-row">
+        <input type="text" id="link-input" class="link-input-field" placeholder="&#x1F517; Dán link URL..." autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')handleLinkDistill()" />
+        <button class="btn-extra" onclick="handleLinkDistill()">Tóm Tắt</button>
+      </div>
+      <!-- attachment preview list — shows queued items before distill -->
+      <div id="attach-preview" style="padding:4px 0 2px;gap:4px;flex-direction:column"></div>
+    </div>
+
+    <div class="result-panel hidden" id="result-panel">
+      <div class="result-label">&#x26A1; Đã Chắt Lọc</div>
+      <div class="result-grid">
+        <div>
+          <div class="result-field-label">Ý Tưởng Cốt Lõi</div>
+          <div class="result-field-value core-idea-text" id="r-core-idea"></div>
+        </div>
+        <div style="display:flex;gap:20px;flex-wrap:wrap">
+          <div>
+            <div class="result-field-label">Loại</div>
+            <div class="result-field-value" id="r-type"></div>
+          </div>
+          <div style="flex:1">
+            <div class="result-field-label">Từ Khoá</div>
+            <div class="result-field-value keywords-wrap" id="r-keywords"></div>
+          </div>
+        </div>
+        <div>
+          <div class="result-field-label">Tóm Tắt</div>
+          <div class="result-field-value" id="r-summary"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <!-- ══ AI RECALL ══════════════════════════════════════════ -->
+    <div class="recall-header">
+      <span class="recall-header-label">&#x1F9E0; AI Recall</span>
+      <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted)">max 80 ideas</span>
+    </div>
+    <div class="recall-input-row">
+      <input type="text" id="recall-input" placeholder="Nhớ lại... ví dụ: ý tưởng về automation..." autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')runRecall()" />
+      <button class="btn-recall" id="btn-recall" onclick="runRecall()">&#x26A1; Recall</button>
+    </div>
+    <div id="recall-results">
+      <div class="recall-empty">Nhập câu hỏi và bấm Recall<br>để tìm lại ý tưởng liên quan</div>
+    </div>
+    <!-- ══ DIVIDER ════════════════════════════════════════════ -->
+    <div class="recall-divider" id="recall-divider"></div>
+    <!-- ══ IDEAS LIST ════════════════════════════════════════= -->
+    <div style="display:grid;grid-template-rows:auto auto auto 1fr;overflow:hidden;min-height:0">
+      <div class="sidebar-header">
+        <div class="sidebar-title">Ý Tưởng Đã Lưu</div>
+        <div class="entry-count" id="entry-count">0</div>
+      </div>
+      <div class="search-bar">
+        <input type="text" id="search-input" placeholder="&#x1F50D; Tìm theo tiêu đề, từ khoá..." oninput="onSearch()" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="filter-bar" id="filter-bar"></div>
+      <div class="ideas-list" id="ideas-list">
+        <div class="empty-state">CHƯA CÓ GÌ CẢ<br><br>dán gì đó vào<br>rồi bấm &#x26A1; chắt lọc</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModalDirect()">
+  <div class="modal">
+    <div class="modal-header">
+      <div style="min-width:0;flex:1">
+        <div class="modal-title" id="m-title"></div>
+        <div style="margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <span id="m-type-badge"></span>
+          <select class="type-select" id="m-type-select" onchange="changeEntryType(this.value)"></select>
+          <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted)" id="m-time"></span>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModalDirect()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <div class="result-field-label">Ý Tưởng Cốt Lõi</div>
+        <div class="result-field-value core-idea-text" id="m-core-idea"></div>
+      </div>
+      <div>
+        <div class="result-field-label">Tóm Tắt</div>
+        <div class="result-field-value" id="m-summary"></div>
+      </div>
+      <div>
+        <div class="result-field-label">Từ Khoá</div>
+        <div class="result-field-value keywords-wrap" id="m-keywords"></div>
+      </div>
+      <div>
+        <div class="result-field-label">Nội Dung Thô</div>
+        <div class="raw-text" id="m-raw"></div>
+      </div>
+      <!-- ══ ATTACHMENTS (images + links) ══ -->
+      <div id="m-attachments" style="display:none">
+        <div class="result-field-label">Đính Kèm</div>
+        <div class="attachments-wrap" id="m-attachments-wrap"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="exportMarkdown()">&#x2193; Xuất MD</button>
+      <button class="btn btn-secondary" onclick="copyMdCurrent()">&#x2398; Copy MD</button>
+      <button class="btn btn-danger" onclick="deleteCurrentEntry()">Xoá</button>
+    </div>
+  </div>
+</div>
+
+<!-- API KEY MODAL -->
+<div class="modal-overlay" id="apikey-overlay" onclick="if(event.target===this)closeApiKeyModalDirect()">
+  <div class="small-modal" onclick="event.stopPropagation()">
+    <h3>API KEY GROK</h3>
+    <p>Lấy key tại <strong>console.x.ai</strong>. Chỉ lưu trong trình duyệt của bạn.</p>
+    <input type="password" id="api-key-input" placeholder="xai-..." />
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="saveApiKey()">Lưu Key</button>
+      <button class="btn btn-secondary" onclick="closeApiKeyModalDirect()">Huỷ</button>
+    </div>
+  </div>
+</div>
+
+<!-- CATEGORY MODAL -->
+<div class="modal-overlay" id="cat-overlay" onclick="if(event.target===this)closeCatModal()">
+  <div class="small-modal" onclick="event.stopPropagation()">
+    <h3>QUẢN LÝ DANH MỤC</h3>
+    <div class="cat-list" id="cat-list"></div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input type="text" id="new-cat-input" placeholder="Tên danh mục mới..." style="margin-bottom:0;flex:1" onkeydown="if(event.key==='Enter')addCategory()" />
+      <button class="btn btn-primary" style="padding:10px 14px" onclick="addCategory()">+</button>
+    </div>
+    <button class="btn btn-secondary" style="width:100%;justify-content:center" onclick="closeCatModal()">Đóng</button>
+  </div>
+</div>
+
+<!-- BACKUP MODAL -->
+<div class="modal-overlay" id="backup-overlay" onclick="if(event.target===this)closeBackupModal()">
+  <div class="small-modal" onclick="event.stopPropagation()">
+    <h3>BACKUP &amp; KHÔI PHỤC</h3>
+    <p>Xuất toàn bộ dữ liệu ra file JSON hoặc nhập lại từ backup.</p>
+    <div style="display:grid;gap:8px;margin-bottom:16px">
+      <button class="btn btn-secondary" style="width:100%;justify-content:center" onclick="exportAllJSON()">&#x2B07; Xuất Tất Cả (JSON)</button>
+      <button class="btn btn-secondary" style="width:100%;justify-content:center" onclick="document.getElementById('import-file').click()">&#x2B06; Nhập Từ File JSON</button>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importJSON(this)" />
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;display:grid;gap:8px">
+      <p style="margin-bottom:0;color:var(--warning)">&#x26A0; Vùng nguy hiểm</p>
+      <button class="btn btn-danger" style="width:100%;justify-content:center;border:1px solid var(--danger)" onclick="confirmClearAll()">&#x1F5D1; Xoá Toàn Bộ Dữ Liệu</button>
+    </div>
+    <div style="margin-top:14px">
+      <button class="btn btn-secondary" style="width:100%;justify-content:center" onclick="closeBackupModal()">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- PROMPT MODAL -->
+<div class="modal-overlay" id="prompt-overlay" onclick="if(event.target===this)closePromptModal()">
+  <div class="small-modal" style="max-width:600px" onclick="event.stopPropagation()">
+    <h3>&#x1F9E0; Tuỳ Chỉnh Prompt Distill</h3>
+    <p>Chỉnh prompt gửi cho Grok khi chắt lọc. Dùng <code style="color:var(--accent);background:var(--surface2);padding:1px 5px;border-radius:2px">{{RAW_TEXT}}</code> nơi nội dung sẽ được chèn vào.</p>
+    <textarea id="prompt-textarea" style="width:100%;height:260px;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'Space Mono',monospace;font-size:11px;padding:12px;border-radius:4px;outline:none;resize:vertical;line-height:1.6;margin-bottom:10px" spellcheck="false" placeholder="Nhập prompt tuỳ chỉnh..."></textarea>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" style="flex:1" onclick="savePromptOverride()">Lưu Prompt</button>
+      <button class="btn btn-secondary" onclick="resetPromptOverride()" title="Xoá prompt tuỳ chỉnh, dùng lại mặc định">&#x21BA; Reset</button>
+      <button class="btn btn-secondary" onclick="closePromptModal()">Đóng</button>
+    </div>
+    <div id="prompt-status" style="font-family:'Space Mono',monospace;font-size:11px;color:var(--accent);margin-top:8px;min-height:16px"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     FIREBASE MODULE
+═══════════════════════════════════════════════ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, setDoc, getDoc, serverTimestamp, query, orderBy, limit, startAfter, writeBatch }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+/* ── IMAGE SECTION — Firebase Storage ── */
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBtAycEH1ekTsrosqVjStpNjqS0GLMVjvI",
+  authDomain: "rongleo-note-idea.firebaseapp.com",
+  projectId: "rongleo-note-idea",
+  storageBucket: "rongleo-note-idea.firebasestorage.app",
+  messagingSenderId: "1049755093862",
+  appId: "1:1049755093862:web:a804ea9178f33e7cc696a7",
+  measurementId: "G-5CG2640BNJ"
+};
+
+let db = null;
+let storage = null;
+try {
+  const app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+  storage = getStorage(app);
+  window._setSyncDot('ok');
+} catch(e) {
+  console.warn('Firebase init failed:', e);
+  window._setSyncDot('err');
+}
+
+/* ── IMAGE SECTION — upload resized JPEG to Storage ── */
+window._fbUploadImage = async function(blob) {
+  if (!storage) throw new Error('Firebase Storage chưa khởi tạo');
+  // Fix 3.2: store path so we can deleteObject later — URL alone is not enough
+  const path = 'images/' + Date.now() + '.jpg';
+  const imgRef = storageRef(storage, path);
+  await uploadBytes(imgRef, blob, { contentType: 'image/jpeg' });
+  const url = await getDownloadURL(imgRef);
+  return { url, path }; // return BOTH
+};
+
+window._fbSaveEntry = async function(entry) {
+  if (!db) return false;
+  try {
+    window._setSyncDot('syncing');
+    const plain = JSON.parse(JSON.stringify(entry));
+    // Store docId back on entry so delete/update are O(1) — no full scan needed
+    const ref = await addDoc(collection(db, 'ideas'), { ...plain, _ts: serverTimestamp() });
+    window._docIdMap = window._docIdMap || {};
+    window._docIdMap[entry.id] = ref.id;
+    window._setSyncDot('ok');
+    return true;
+  } catch(e) {
+    console.warn('Firestore save failed:', e);
+    window._setSyncDot('err');
+    return false;
+  }
+};
+
+window._fbDeleteEntry = async function(id, attachments) {
+  if (!db) return;
+  try {
+    // Fix 3.1: delete Storage images FIRST before removing Firestore doc
+    // Without this, image files accumulate in Storage forever
+    if (storage && Array.isArray(attachments)) {
+      const storageDeletes = attachments
+        .filter(a => a.type === 'image' && a.path)
+        .map(a => deleteObject(storageRef(storage, a.path)).catch(e => {
+          // Lỗ 2 fix: log clearly so orphaned files are traceable
+          console.warn('[Storage] Delete failed — file may be orphaned:', a.path, e.code || e.message);
+        }));
+      if (storageDeletes.length > 0) {
+        console.log('[Storage] Deleting', storageDeletes.length, 'image(s) for entry', id);
+        await Promise.all(storageDeletes);
+      }
+    }
+    // Fast path: use cached docId if available
+    const map = window._docIdMap || {};
+    if (map[id]) {
+      await deleteDoc(doc(db, 'ideas', map[id]));
+      delete map[id];
+      return;
+    }
+    // Fallback: scan once (only when docId not cached, e.g. after page reload)
+    const snap = await getDocs(collection(db, 'ideas'));
+    const batch = [];
+    snap.forEach(d => {
+      if (d.data().id === id) {
+        batch.push(deleteDoc(doc(db, 'ideas', d.id)));
+      }
+    });
+    await Promise.all(batch);
+  } catch(e) { console.warn('Firestore delete failed:', e); }
+};
+
+window._fbUpdateEntry = async function(id, fields) {
+  if (!db) return;
+  try {
+    // Fast path: use cached docId if available
+    const map = window._docIdMap || {};
+    if (map[id]) {
+      await updateDoc(doc(db, 'ideas', map[id]), fields);
+      return;
+    }
+    // Fallback: scan once
+    const snap = await getDocs(collection(db, 'ideas'));
+    const batch = [];
+    snap.forEach(d => {
+      if (d.data().id === id) batch.push(updateDoc(doc(db, 'ideas', d.id), fields));
+    });
+    await Promise.all(batch);
+  } catch(e) { console.warn('Firestore update failed:', e); }
+};
+
+const PAGE_SIZE = 100;
+let _lastDoc = null; // cursor for pagination
+
+window._fbLoadAll = async function() {
+  if (!db) return null;
+  try {
+    window._setSyncDot('syncing');
+    // NOTE 3.3: orderBy('time') requires a single-field index — Firestore creates this automatically.
+    // If you add filter(type) + orderBy(time) later, create a composite index in Firebase Console:
+    //   Collection: ideas | Fields: type ASC, time DESC
+    const q = query(collection(db, 'ideas'), orderBy('time', 'desc'), limit(PAGE_SIZE));
+    const snap = await getDocs(q);
+    const rows = [];
+    window._docIdMap = window._docIdMap || {};
+    snap.forEach(d => {
+      const data = { ...d.data() };
+      delete data._ts;
+      if (data.id) { rows.push(data); window._docIdMap[data.id] = d.id; }
+    });
+    // Store cursor for loadMore
+    _lastDoc = snap.docs[snap.docs.length - 1] || null;
+    window._hasMore = snap.docs.length === PAGE_SIZE;
+    window._setSyncDot('ok');
+    return rows;
+  } catch(e) {
+    console.warn('Firestore load failed:', e);
+    window._setSyncDot('err');
+    return null;
+  }
+};
+
+window._fbLoadMore = async function() {
+  if (!db || !_lastDoc) return [];
+  try {
+    window._setSyncDot('syncing');
+    const q = query(collection(db, 'ideas'), orderBy('time', 'desc'), startAfter(_lastDoc), limit(PAGE_SIZE));
+    const snap = await getDocs(q);
+    const rows = [];
+    window._docIdMap = window._docIdMap || {};
+    snap.forEach(d => {
+      const data = { ...d.data() };
+      delete data._ts;
+      if (data.id) { rows.push(data); window._docIdMap[data.id] = d.id; }
+    });
+    _lastDoc = snap.docs[snap.docs.length - 1] || _lastDoc;
+    window._hasMore = snap.docs.length === PAGE_SIZE;
+    window._setSyncDot('ok');
+    return rows;
+  } catch(e) {
+    console.warn('Firestore loadMore failed:', e);
+    window._setSyncDot('err');
+    return [];
+  }
+};
+
+// Fix 3.4 — delete ALL docs in Firestore using batched writes (max 500/batch)
+window._fbClearAll = async function() {
+  if (!db) return false;
+  try {
+    window._setSyncDot('syncing');
+    // Loop until no docs remain (handles >500 docs)
+    while (true) {
+      const snap = await getDocs(query(collection(db, 'ideas'), limit(400)));
+      if (snap.empty) break;
+      const batch = writeBatch(db);
+      snap.forEach(d => batch.delete(doc(db, 'ideas', d.id)));
+      await batch.commit();
+    }
+    // Also clear docId cache
+    window._docIdMap = {};
+    _lastDoc = null;
+    window._hasMore = false;
+    window._setSyncDot('ok');
+    return true;
+  } catch(e) {
+    console.warn('Firestore clearAll failed:', e);
+    window._setSyncDot('err');
+    return false;
+  }
+};
+
+window._fbSaveCategories = async function(cats) {
+  if (!db) return;
+  try {
+    // Single doc in 'config' collection — upsert with setDoc + merge
+    await setDoc(doc(db, 'config', 'categories'), { list: cats, _ts: serverTimestamp() }, { merge: true });
+  } catch(e) { console.warn('Firestore save categories failed:', e); }
+};
+
+window._fbLoadCategories = async function() {
+  if (!db) return null;
+  try {
+    const snap = await getDoc(doc(db, 'config', 'categories'));
+    if (snap.exists()) return snap.data().list || null;
+    return null;
+  } catch(e) { console.warn('Firestore load categories failed:', e); return null; }
+};
+
+window._fbReady = true;
+window.dispatchEvent(new Event('fb-ready'));
+</script>
+
+<!-- ═══════════════════════════════════════════════
+     MAIN APP
+═══════════════════════════════════════════════ -->
+<script>
+// ─── SYNC DOT (called before module is ready too) ────────────
+window._setSyncDot = function(state) {
+  const el = document.getElementById('sync-dot');
+  if (!el) return;
+  el.className = 'sync-dot ' + state;
+  const labels = { ok: 'Firebase: OK', err: 'Firebase: lỗi (dùng localStorage)', syncing: 'Đang đồng bộ...', '': '' };
+  el.title = labels[state] || '';
+};
+
+// ─── CATEGORY SYSTEM ─────────────────────────────────────────
+const DEFAULT_CATEGORIES = ['y tuong', 'he thong', 'dac ta', 'linh tinh'];
+// Use proper Vietnamese stored in localStorage
+let CATEGORIES = (() => {
+  try { return JSON.parse(localStorage.getItem('distill_categories')) || ['ý tưởng', 'hệ thống', 'đặc tả', 'linh tinh']; }
+  catch(e) { return ['ý tưởng', 'hệ thống', 'đặc tả', 'linh tinh']; }
+})();
+
+function saveCategories() {
+  localStorage.setItem('distill_categories', JSON.stringify(CATEGORIES));
+  // Sync to Firestore so all devices share the same categories
+  if (window._fbReady) window._fbSaveCategories(CATEGORIES);
+}
+
+function getCatIndex(type) {
+  if (!type) return CATEGORIES.length - 1;
+  const t = type.toLowerCase().trim();
+  const i = CATEGORIES.findIndex(c => c.toLowerCase().trim() === t);
+  return i >= 0 ? i : CATEGORIES.length - 1;
+}
+
+function typeBadge(type) {
+  const idx = getCatIndex(type);
+  const label = CATEGORIES[idx] !== undefined ? CATEGORIES[idx] : (type || 'linh tinh');
+  return '<span class="type-badge type-c' + (idx % 8) + '">' + escHtml(label) + '</span>';
+}
+
+function normalizeType(raw) {
+  if (!raw) return CATEGORIES[CATEGORIES.length - 1];
+  const t = raw.toLowerCase().trim();
+  const exact = CATEGORIES.find(c => c.toLowerCase().trim() === t);
+  if (exact) return exact;
+  // Legacy English
+  const map = { idea: 'ý tưởng', system: 'hệ thống', spec: 'đặc tả', random: 'linh tinh' };
+  if (map[t]) {
+    const m = CATEGORIES.find(c => c === map[t]);
+    if (m) return m;
+  }
+  return CATEGORIES[CATEGORIES.length - 1];
+}
+
+// ─── STATE ────────────────────────────────────────────────────
+let ideas = [];
+let currentEntryId = null;
+let currentFilter = '__all__';
+let currentSearch = '';
+let isLoadingMore = false;
+
+// ─── INIT (localStorage first, then Firebase) ─────────────────
+(function init() {
+  try { ideas = JSON.parse(localStorage.getItem('distill_ideas') || '[]'); } catch(e) { ideas = []; }
+  renderFilterBar();
+  renderList();
+  document.getElementById('raw-input').addEventListener('input', updateCharCount);
+})();
+
+window.addEventListener('fb-ready', async function() {
+  // 1. Sync categories first (cross-device)
+  const fbCats = await window._fbLoadCategories();
+  if (fbCats && Array.isArray(fbCats) && fbCats.length > 0) {
+    CATEGORIES = fbCats;
+    localStorage.setItem('distill_categories', JSON.stringify(CATEGORIES));
+    renderFilterBar();
+  }
+
+  // 2. Load first page of ideas
+  const fbIdeas = await window._fbLoadAll();
+  if (fbIdeas !== null && fbIdeas.length > 0) {
+    ideas = fbIdeas;
+    saveToLocalStorage();
+    renderFilterBar();
+    renderList();
+  }
+});
+
+// Infinite scroll — load next page when user scrolls near bottom of sidebar
+document.addEventListener('DOMContentLoaded', function() {
+  var list = document.getElementById('ideas-list');
+  if (list) {
+    list.addEventListener('scroll', function() {
+      if (isLoadingMore) return;
+      if (!window._hasMore) return;
+      // Trigger when within 80px of bottom
+      if (list.scrollTop + list.clientHeight >= list.scrollHeight - 80) {
+        loadMoreIdeas();
+      }
+    });
+  }
+});
+
+async function loadMoreIdeas() {
+  if (isLoadingMore || !window._fbReady || !window._hasMore) return;
+  isLoadingMore = true;
+  showToast('Đang tải thêm...', '');
+  var more = await window._fbLoadMore();
+  if (more && more.length > 0) {
+    // Merge: avoid duplicates by id
+    var existingIds = new Set(ideas.map(function(e){ return e.id; }));
+    more.forEach(function(e){ if (!existingIds.has(e.id)) ideas.push(e); });
+    saveToLocalStorage();
+    renderList();
+    showToast('Đã tải thêm ' + more.length + ' entries', 'success');
+  }
+  isLoadingMore = false;
+}
+
+function updateCharCount() {
+  const len = document.getElementById('raw-input').value.length;
+  document.getElementById('char-count').textContent = len.toLocaleString() + ' ký tự';
+}
+
+// ─── GROK PROMPT (dynamic categories) ────────────────────────
+function buildPrompt(rawText) {
+  const catList = CATEGORIES.join(', ');
+  return 'CHẮT LỌC Ý TƯỞNG — CHẾ ĐỘ NGHIÊM NGẶT\n' +
+    'Bạn nhận được đầu vào thô:\n- suy nghĩ lộn xộn\n- đoạn chat dài\n- ý tưởng chưa hoàn chỉnh\n' +
+    'Nhiệm vụ: chắt lọc ra ĐÚNG phần có giá trị, bỏ hết nhiễu.\n\n' +
+    'ĐỊNH DẠNG ĐẦU RA (CHỈ JSON thuần, không markdown, không giải thích):\n' +
+    '{\n  "summary": ["điểm 1", "điểm 2", ...],\n  "coreIdea": "một câu duy nhất",\n' +
+    '  "type": "một trong các loại hợp lệ",\n  "keywords": ["từ1", "từ2", ...]\n}\n\n' +
+    'DANH MỤC HỢP LỆ cho trường "type": ' + catList + '\n\n' +
+    'QUY TẮC:\n' +
+    '1. KHÔNG thêm ý tưởng mới\n' +
+    '2. KHÔNG mở rộng ngoài nội dung đầu vào\n' +
+    '3. LOẠI BỎ lặp lại và nhiễu\n' +
+    '4. TẬP TRUNG vào logic cốt lõi\n' +
+    '5. summary: tối đa 5 điểm, chỉ thông tin có giá trị thực sự\n' +
+    '6. keywords: 3-5 từ khoá tiếng Việt\n' +
+    '7. type PHẢI là một trong: ' + catList + '\n' +
+    '8. CHỈ TRẢ VỀ JSON object, không có gì khác\n' +
+    '9. TOÀN BỘ nội dung trả về phải bằng tiếng Việt\n\n' +
+    'VÍ DỤ XẤU: "Người dùng đang suy nghĩ về điều gì đó thú vị"\n' +
+    'VÍ DỤ TỐT: "Đề xuất dùng tự động hoá clipboard để mô phỏng multi-agent AI mà không tốn phí API"\n\n' +
+    'NỘI DUNG ĐẦU VÀO:\n' + rawText;
+}
+
+// ─── VALIDATION ───────────────────────────────────────────────
+function validateEntry(entry) {
+  if (!entry.coreIdea || !entry.coreIdea.trim()) {
+    showToast('Thiếu ý tưởng cốt lõi — không lưu', 'error');
+    return false;
+  }
+  if (!Array.isArray(entry.summary) || entry.summary.filter(function(s){ return s.trim(); }).length < 1) {
+    showToast('Tóm tắt phải có ít nhất 1 điểm — không lưu', 'error');
+    return false;
+  }
+  return true;
+}
+
+// ─── DISTILL ──────────────────────────────────────────────────
+async function distillAndSave() {
+  const raw = document.getElementById('raw-input').value.trim();
+  if (!raw) { showToast('Dán text vào trước đã', 'error'); return; }
+
+  const apiKey = localStorage.getItem('grok_api_key');
+  if (!apiKey) { showToast('Chưa có API key — cài vào API KEY', 'error'); openApiKeyModal(); return; }
+
+  setLoading(true);
+  try {
+    // Intent detection runs in parallel with distill
+    const intentPromise = detectIntent(raw);
+
+    const response = await fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({ model: 'grok-2-latest', messages: [{ role: 'user', content: getEffectivePrompt(raw) }] })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(function(){ return {}; });
+      throw new Error((err.error && err.error.message) || ('HTTP ' + response.status));
+    }
+
+    const data = await response.json();
+    const text = ((data.choices || [])[0] || {}).message && data.choices[0].message.content || '';
+    const cleaned = text.replace(/```json|```/g, '').trim();
+
+    let parsed;
+    try { parsed = JSON.parse(cleaned); }
+    catch(e) { throw new Error('Không thể parse JSON từ Grok'); }
+
+    // INTENT: override type if detected
+    const intentResult = await intentPromise;
+    let detectedType = null;
+    if (intentResult && intentResult.intent === 'set_category' && intentResult.category) {
+      detectedType = normalizeType(intentResult.category);
+      showToast('Intent: đặt loại → ' + detectedType, 'success');
+    }
+
+    const entry = {
+      id: Date.now().toString(),
+      time: new Date().toISOString(),
+      type: detectedType || normalizeType(parsed.type),
+      title: (parsed.coreIdea || '').trim() || 'Không có tiêu đề',
+      summary: Array.isArray(parsed.summary) ? parsed.summary.filter(function(s){ return s.trim(); }) : [],
+      coreIdea: (parsed.coreIdea || '').trim(),
+      keywords: Array.isArray(parsed.keywords) ? parsed.keywords : [],
+      raw: raw,
+      attachments: (window._pendingAttachments || []).slice(),
+      hasAttachments: (window._pendingAttachments || []).length > 0
+    };
+
+    window._pendingAttachments = []; // clear after consuming
+    renderAttachPreview();
+
+    if (!validateEntry(entry)) return;
+
+    await saveEntry(entry);
+    showResult(entry);
+    showToast('Đã chắt lọc và lưu', 'success');
+
+  } catch(err) {
+    console.error(err);
+    showToast('Chắt lọc thất bại. Bạn vẫn có thể lưu thô.', 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function quickSaveRaw() {
+  const raw = document.getElementById('raw-input').value.trim();
+  if (!raw) { showToast('Chưa có gì để lưu', 'error'); return; }
+  const preview = raw.substring(0, 80) + (raw.length > 80 ? '...' : '');
+  var pendingAtts = (window._pendingAttachments || []).slice();
+  window._pendingAttachments = [];
+  renderAttachPreview(); // clear preview queue after save
+  const entry = {
+    id: Date.now().toString(),
+    time: new Date().toISOString(),
+    type: CATEGORIES[CATEGORIES.length - 1],
+    title: preview,
+    summary: ['(lưu thô, chưa chắt lọc)'],
+    coreIdea: preview,
+    keywords: [],
+    raw: raw,
+    attachments: pendingAtts,
+    hasAttachments: pendingAtts.length > 0
+  };
+  await saveEntry(entry);
+  showToast('Đã lưu thô', 'success');
+}
+
+function clearInput() {
+  document.getElementById('raw-input').value = '';
+  updateCharCount();
+  document.getElementById('result-panel').classList.add('hidden');
+  // Also clear pending attachments so user gets a clean slate
+  window._pendingAttachments = [];
+  renderAttachPreview();
+  document.getElementById('img-status').textContent = '';
+}
+
+// ─── RESULT PANEL ─────────────────────────────────────────────
+function showResult(entry) {
+  document.getElementById('r-core-idea').textContent = entry.coreIdea || '—';
+  document.getElementById('r-type').innerHTML = typeBadge(entry.type);
+  document.getElementById('r-keywords').innerHTML = entry.keywords.map(function(k){ return '<span class="keyword-tag">' + escHtml(k) + '</span>'; }).join('');
+  var sumEl = document.getElementById('r-summary');
+  sumEl.innerHTML = entry.summary.length > 0
+    ? '<ul>' + entry.summary.map(function(s){ return '<li>' + escHtml(s) + '</li>'; }).join('') + '</ul>'
+    : '—';
+  document.getElementById('result-panel').classList.remove('hidden');
+}
+
+// ─── STORAGE ──────────────────────────────────────────────────
+async function saveEntry(entry) {
+  ideas.unshift(entry);
+  saveToLocalStorage();
+  renderFilterBar();
+  renderList();
+  if (window._fbReady) {
+    var ok = await window._fbSaveEntry(entry);
+    if (!ok) showToast('Firebase thất bại — đã lưu local', 'warn');
+  }
+}
+
+async function deleteEntry(id) {
+  var entry = ideas.find(function(e){ return e.id === id; });
+  var attachments = (entry && entry.attachments) ? entry.attachments : [];
+  ideas = ideas.filter(function(e){ return e.id !== id; });
+  saveToLocalStorage();
+  renderFilterBar();
+  renderList();
+  // Pass attachments so Firebase can delete Storage images too (Fix 3.1)
+  if (window._fbReady) await window._fbDeleteEntry(id, attachments);
+}
+
+function saveToLocalStorage() {
+  // Cache only (200 latest) — nguồn sự thật đầy đủ nằm ở Firestore.
+  try { localStorage.setItem('distill_ideas', JSON.stringify(ideas.slice(0, 200))); } catch(e) {}
+}
+
+// ─── FILTER ───────────────────────────────────────────────────
+var _searchTimer = null;
+function onSearch() {
+  // Debounce 200ms — prevents re-rendering 1000 items on every keystroke
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(function() {
+    currentSearch = document.getElementById('search-input').value.toLowerCase().trim();
+    renderList();
+  }, 200);
+}
+
+function setFilter(cat) {
+  currentFilter = cat;
+  document.querySelectorAll('.filter-chip').forEach(function(c){
+    c.classList.toggle('active', c.getAttribute('data-cat') === cat);
+  });
+  renderList();
+}
+
+function renderFilterBar() {
+  var bar = document.getElementById('filter-bar');
+  var html = '<button class="filter-chip ' + (currentFilter === '__all__' ? 'active' : '') + '" data-cat="__all__" onclick="setFilter(\'__all__\')">Tất cả</button>';
+  CATEGORIES.forEach(function(cat) {
+    html += '<button class="filter-chip ' + (currentFilter === cat ? 'active' : '') + '" data-cat="' + escHtml(cat) + '" onclick="setFilter(' + JSON.stringify(cat) + ')">' + escHtml(cat) + '</button>';
+  });
+  bar.innerHTML = html;
+}
+
+// ─── LIST RENDER ──────────────────────────────────────────────
+function renderList() {
+  var list = document.getElementById('ideas-list');
+  document.getElementById('entry-count').textContent = ideas.length;
+
+  var filtered = currentFilter === '__all__'
+    ? ideas
+    : ideas.filter(function(e){ return (e.type || '').toLowerCase() === currentFilter.toLowerCase(); });
+
+  // Search: filter by title + keywords + coreIdea
+  if (currentSearch) {
+    filtered = filtered.filter(function(e) {
+      var haystack = [
+        e.title || '',
+        e.coreIdea || '',
+        (e.keywords || []).join(' ')
+      ].join(' ').toLowerCase();
+      return haystack.indexOf(currentSearch) !== -1;
+    });
+  }
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty-state">' +
+      (ideas.length === 0
+        ? 'CHƯA CÓ GÌ CẢ<br><br>dán gì đó vào<br>rồi bấm &#x26A1; chắt lọc'
+        : currentSearch
+          ? 'KHÔNG TÌM THẤY<br><br>"' + escHtml(currentSearch) + '"'
+          : 'KHÔNG CÓ MỤC NÀO<br><br>trong danh mục này') +
+      '</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(function(e) {
+    // Upgrade 3: attachment badge — O(1) using hasAttachments flag, no array scan
+    var attachBadge = '';
+    if (e.hasAttachments || (e.attachments && e.attachments.length > 0)) {
+      var atts = e.attachments || [];
+      var hasImg  = atts.some(function(a){ return a.type === 'image'; });
+      var hasLink = atts.some(function(a){ return a.type === 'link'; });
+      if (hasImg)  attachBadge += '<span class="attach-badge" title="Có ảnh đính kèm">&#x1F4F8;</span>';
+      if (hasLink) attachBadge += '<span class="attach-badge" title="Có link đính kèm">&#x1F517;</span>';
+    }
+    return '<div class="idea-item' + (currentEntryId === e.id ? ' active' : '') + '" data-id="' + e.id + '" onclick="openEntry(\'' + e.id + '\')">' +
+      '<div class="idea-item-time">' + formatTime(e.time) + '</div>' +
+      '<div class="idea-item-title">' + escHtml(e.title) + '</div>' +
+      '<div style="display:flex;align-items:center;gap:5px">' + typeBadge(e.type) + attachBadge + '</div>' +
+      '<div class="idea-item-actions" onclick="event.stopPropagation()">' +
+        '<button class="mini-btn" onclick="copyMd(\'' + e.id + '\')">MD</button>' +
+        '<button class="mini-btn del" onclick="deleteEntryFromList(\'' + e.id + '\')">&#x2715;</button>' +
+      '</div>' +
+    '</div>';
+  }).join('') + (window._hasMore && !currentSearch && currentFilter === '__all__'
+    ? '<div style="padding:12px;text-align:center">' +
+        '<button class="mini-btn" onclick="loadMoreIdeas()" style="width:100%;padding:8px;letter-spacing:1px">' +
+          (isLoadingMore ? 'Đang tải...' : '↓ Tải thêm') +
+        '</button>' +
+      '</div>'
+    : '');
+}
+
+function deleteEntryFromList(id) {
+  if (!confirm('Xoá entry này?')) return;
+  deleteEntry(id);
+  if (currentEntryId === id) closeModalDirect();
+}
+
+// ─── DETAIL MODAL ─────────────────────────────────────────────
+function openEntry(id) {
+  var entry = ideas.find(function(e){ return e.id === id; });
+  if (!entry) return;
+  currentEntryId = id;
+
+  document.getElementById('m-title').textContent = entry.title;
+  document.getElementById('m-type-badge').innerHTML = typeBadge(entry.type);
+  document.getElementById('m-time').textContent = formatTime(entry.time);
+  document.getElementById('m-core-idea').textContent = entry.coreIdea || '(lưu thô)';
+
+  var sumEl = document.getElementById('m-summary');
+  sumEl.innerHTML = (entry.summary && entry.summary.length > 0)
+    ? '<ul>' + entry.summary.map(function(s){ return '<li>' + escHtml(s) + '</li>'; }).join('') + '</ul>'
+    : '(không có tóm tắt)';
+
+  var kwEl = document.getElementById('m-keywords');
+  kwEl.innerHTML = (entry.keywords && entry.keywords.length > 0)
+    ? entry.keywords.map(function(k){ return '<span class="keyword-tag">' + escHtml(k) + '</span>'; }).join('')
+    : '<span style="color:var(--muted)">—</span>';
+
+  document.getElementById('m-raw').textContent = entry.raw;
+
+  // ── Attachments (images + links) ──
+  var attachSection = document.getElementById('m-attachments');
+  var attachWrap    = document.getElementById('m-attachments-wrap');
+  var attachments   = entry.attachments || [];
+  if (attachments.length > 0) {
+    attachWrap.innerHTML = attachments.map(function(a) {
+      if (a.type === 'image') {
+        return '<img class="attach-image" src="' + escHtml(a.url) + '" alt="Ảnh đính kèm" onclick="window.open(\'' + escHtml(a.url) + '\',\'_blank\')" />';
+      }
+      if (a.type === 'link') {
+        return '<a class="attach-link" href="' + escHtml(a.url) + '" target="_blank" rel="noopener">' +
+          '<span class="attach-link-icon">&#x1F517;</span>' +
+          '<div style="min-width:0">' +
+            '<div class="attach-link-title">' + escHtml(a.title || a.url) + '</div>' +
+            '<div class="attach-link-text">' + escHtml(a.url) + '</div>' +
+          '</div>' +
+        '</a>';
+      }
+      return '';
+    }).filter(Boolean).join('');
+    attachSection.style.display = '';
+  } else {
+    attachSection.style.display = 'none';
+  }
+
+  var sel = document.getElementById('m-type-select');
+  sel.innerHTML = CATEGORIES.map(function(c){
+    return '<option value="' + escHtml(c) + '"' + (c === entry.type ? ' selected' : '') + '>' + escHtml(c) + '</option>';
+  }).join('');
+
+  document.querySelectorAll('.idea-item').forEach(function(el){ el.classList.remove('active'); });
+  var activeEl = document.querySelector('.idea-item[data-id="' + id + '"]');
+  if (activeEl) activeEl.classList.add('active');
+
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function changeEntryType(newType) {
+  var entry = ideas.find(function(e){ return e.id === currentEntryId; });
+  if (!entry) return;
+  entry.type = newType;
+  document.getElementById('m-type-badge').innerHTML = typeBadge(newType);
+  saveToLocalStorage();
+  renderList();
+  if (window._fbReady) window._fbUpdateEntry(currentEntryId, { type: newType });
+  showToast('Đã đổi danh mục', 'success');
+}
+
+function closeModalDirect() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  currentEntryId = null;
+  document.querySelectorAll('.idea-item').forEach(function(el){ el.classList.remove('active'); });
+}
+
+// ─── MARKDOWN ─────────────────────────────────────────────────
+function entryToMarkdown(entry) {
+  var d = new Date(entry.time).toLocaleString('vi-VN');
+  var sumLines = (entry.summary || []).map(function(s){ return '- ' + s; }).join('\n');
+  var kwLines  = (entry.keywords || []).map(function(k){ return '- ' + k; }).join('\n');
+  return '# ' + entry.title + '\n\n' +
+    'Thời gian: ' + d + '\n' +
+    'Loại: ' + entry.type + '\n\n' +
+    '## TÓM TẮT\n' + (sumLines || '(không có)') + '\n\n' +
+    '## Ý TƯỞNG CỐT LÕI\n' + (entry.coreIdea || '(không có)') + '\n\n' +
+    '## TỪ KHOÁ\n' + (kwLines || '(không có)') + '\n\n' +
+    '## NỘI DUNG THÔ\n' + entry.raw + '\n';
+}
+
+function exportMarkdown() {
+  var entry = ideas.find(function(e){ return e.id === currentEntryId; });
+  if (!entry) return;
+  var blob = new Blob([entryToMarkdown(entry)], { type: 'text/markdown' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = (entry.title.substring(0, 40).replace(/[^\w\s-]/gi, '').trim().replace(/\s+/g, '-') || 'idea') + '.md';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Đã xuất Markdown', 'success');
+}
+
+function copyMdCurrent() { copyMd(currentEntryId); }
+
+function copyMd(id) {
+  var entry = ideas.find(function(e){ return e.id === id; });
+  if (!entry) return;
+  navigator.clipboard.writeText(entryToMarkdown(entry)).then(function(){ showToast('Đã copy MD', 'success'); });
+}
+
+function deleteCurrentEntry() {
+  if (!currentEntryId) return;
+  if (!confirm('Xoá entry này? Không thể hoàn tác.')) return;
+  deleteEntry(currentEntryId);
+  closeModalDirect();
+}
+
+// ─── BACKUP SYSTEM ────────────────────────────────────────────
+function exportAllJSON() {
+  var data = { version: 1, exported: new Date().toISOString(), ideas: ideas, categories: CATEGORIES };
+  var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'distill-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Đã xuất ' + ideas.length + ' entries', 'success');
+}
+
+function importJSON(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      var incoming = Array.isArray(data) ? data : (data.ideas || []);
+      if (!Array.isArray(incoming) || incoming.length === 0) throw new Error('File không hợp lệ');
+      if (!confirm('Nhập ' + incoming.length + ' entries? Dữ liệu hiện tại sẽ bị GHI ĐÈ.')) return;
+      ideas = incoming;
+      if (data.categories && Array.isArray(data.categories)) {
+        CATEGORIES = data.categories;
+        saveCategories();
+      }
+      saveToLocalStorage();
+      renderFilterBar();
+      renderList();
+      showToast('Đã nhập ' + incoming.length + ' entries', 'success');
+      closeBackupModal();
+    } catch(err) { showToast('Lỗi đọc file JSON', 'error'); }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+async function confirmClearAll() {
+  if (!confirm('XOÁ TOÀN BỘ? Không thể hoàn tác!\n\nSẽ xoá cả localStorage và Firestore.')) return;
+  // Disable button to prevent double-click
+  var btn = document.querySelector('[onclick="confirmClearAll()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Đang xoá...'; }
+
+  ideas = [];
+  localStorage.removeItem('distill_ideas');
+  window._docIdMap = {};
+  renderFilterBar();
+  renderList();
+
+  if (window._fbReady) {
+    var ok = await window._fbClearAll();
+    if (ok) {
+      showToast('Đã xoá toàn bộ (local + Firestore)', 'warn');
+    } else {
+      showToast('Local đã xoá — Firestore thất bại, thử lại', 'error');
+    }
+  } else {
+    showToast('Đã xoá local (Firebase chưa kết nối)', 'warn');
+  }
+
+  if (btn) { btn.disabled = false; btn.innerHTML = '&#x1F5D1; Xoá Toàn Bộ Dữ Liệu'; }
+  closeBackupModal();
+}
+
+// ─── CATEGORY MANAGEMENT ──────────────────────────────────────
+function openCatModal() {
+  renderCatList();
+  document.getElementById('cat-overlay').classList.add('open');
+}
+
+function closeCatModal() {
+  document.getElementById('cat-overlay').classList.remove('open');
+  renderFilterBar();
+}
+
+function renderCatList() {
+  var el = document.getElementById('cat-list');
+  if (CATEGORIES.length === 0) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px">Chưa có danh mục nào.</div>';
+    return;
+  }
+  el.innerHTML = CATEGORIES.map(function(c, i) {
+    return '<div class="cat-item">' +
+      '<span>' + typeBadge(c) + ' ' + escHtml(c) + '</span>' +
+      '<button class="cat-del-btn" onclick="deleteCategory(' + i + ')" title="Xoá">&#x2715;</button>' +
+    '</div>';
+  }).join('');
+}
+
+function addCategory() {
+  var input = document.getElementById('new-cat-input');
+  var name = input.value.trim();
+  if (!name) return;
+  if (CATEGORIES.find(function(c){ return c.toLowerCase() === name.toLowerCase(); })) {
+    showToast('Danh mục đã tồn tại', 'error'); return;
+  }
+  CATEGORIES.push(name);
+  saveCategories();
+  input.value = '';
+  renderCatList();
+  showToast('Đã thêm: ' + name, 'success');
+}
+
+function deleteCategory(idx) {
+  if (CATEGORIES.length <= 1) { showToast('Phải có ít nhất 1 danh mục', 'error'); return; }
+  var removed = CATEGORIES.splice(idx, 1)[0];
+  saveCategories();
+  renderCatList();
+  showToast('Đã xoá: ' + removed, 'warn');
+}
+
+// ─── API KEY ──────────────────────────────────────────────────
+function openApiKeyModal() {
+  document.getElementById('api-key-input').value = localStorage.getItem('grok_api_key') || '';
+  document.getElementById('apikey-overlay').classList.add('open');
+}
+function closeApiKeyModalDirect() { document.getElementById('apikey-overlay').classList.remove('open'); }
+function saveApiKey() {
+  var key = document.getElementById('api-key-input').value.trim();
+  if (!key) { showToast('Nhập API key vào đã', 'error'); return; }
+  localStorage.setItem('grok_api_key', key);
+  closeApiKeyModalDirect();
+  showToast('Đã lưu API key', 'success');
+}
+
+function openBackupModal()  { document.getElementById('backup-overlay').classList.add('open'); }
+function closeBackupModal() { document.getElementById('backup-overlay').classList.remove('open'); }
+
+// ─── HELPERS ──────────────────────────────────────────────────
+function setLoading(active) {
+  document.getElementById('loading-bar').classList.toggle('active', active);
+  var btn = document.getElementById('btn-distill');
+  btn.disabled = active;
+  btn.textContent = active ? 'Đang chắt lọc...' : 'Chắt Lọc & Lưu';
+}
+
+function formatTime(iso) {
+  var d = new Date(iso);
+  var today = new Date();
+  if (d.toDateString() === today.toDateString())
+    return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) + ' · ' +
+         d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+var toastTimer;
+function showToast(msg, type) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + (type || '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.className = 'toast'; }, 3000);
+}
+
+// ══════════════════════════════════════════════════════
+// IMAGE SECTION — upload + Grok vision extraction
+// ══════════════════════════════════════════════════════
+
+async function handleImageUpload(input) {
+  var file = input.files[0];
+  if (!file) return;
+  input.value = '';
+
+  var statusEl = document.getElementById('img-status');
+  statusEl.textContent = 'Đang xử lý ảnh...';
+
+  var apiKey = localStorage.getItem('grok_api_key');
+  if (!apiKey) { showToast('Chưa có API key', 'error'); statusEl.textContent = ''; openApiKeyModal(); return; }
+
+  try {
+    // 1. Resize image (max 800px width, quality 0.7)
+    statusEl.textContent = 'Đang nén ảnh...';
+    var resizedBlob = await resizeImage(file, 800, 0.7);
+
+    // 2. Upload to Firebase Storage — store URL + path (path needed for deletion later)
+    statusEl.textContent = 'Đang upload...';
+    var downloadURL = null;
+    var storagePath = null;
+    try {
+      var uploadResult = await window._fbUploadImage(resizedBlob);
+      downloadURL = uploadResult.url;
+      storagePath = uploadResult.path; // Fix 3.2: keep path, not just URL
+      statusEl.textContent = '✓ Upload xong';
+    } catch(uploadErr) {
+      console.warn('Storage upload failed:', uploadErr);
+      statusEl.textContent = '⚠ Upload thất bại, vẫn tiếp tục...';
+    }
+
+    // 3. Convert to base64 to send to Grok vision
+    // Fix 3.4: already resized to max 800px above — base64 payload is bounded
+    statusEl.textContent = 'Đang phân tích ảnh bằng AI...';
+    var base64 = await blobToBase64(resizedBlob);
+
+    var response = await fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: 'grok-2-vision-latest',
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image_url',
+              image_url: { url: 'data:image/jpeg;base64,' + base64 }
+            },
+            {
+              type: 'text',
+              text: 'Bạn nhận một hình ảnh chứa ghi chú, sơ đồ, hoặc ý tưởng viết tay/chụp màn hình.\nHãy trích xuất toàn bộ ý chính, text, và nội dung quan trọng nhìn thấy được.\nKhông cần đầy đủ, tập trung vào thông tin có giá trị. Trả lời bằng tiếng Việt.'
+            }
+          ]
+        }]
+      })
+    });
+
+    var data = await response.json();
+    var extractedText = ((data.choices || [])[0] || {}).message && data.choices[0].message.content || '';
+
+    if (!extractedText) throw new Error('Grok không trích xuất được nội dung từ ảnh');
+
+    // 4. Inject extracted text into textarea and run distill
+    statusEl.textContent = '✓ Đã trích xuất, đang chắt lọc...';
+    document.getElementById('raw-input').value = extractedText;
+    updateCharCount();
+
+    // Build attachment — include path for Storage deletion (Fix 3.2)
+    if (downloadURL) {
+      window._pendingAttachments = window._pendingAttachments || [];
+      window._pendingAttachments.push({ type: 'image', url: downloadURL, path: storagePath });
+      statusEl.textContent = '✓ Đã thêm ' + window._pendingAttachments.length + ' attachment(s)';
+      renderAttachPreview();
+    }
+
+    await distillAndSaveWithAttachment(window._pendingAttachments.slice());
+    statusEl.textContent = '✓ Xong!';
+    setTimeout(function(){ statusEl.textContent = ''; }, 3000);
+
+  } catch(err) {
+    console.error('Image upload error:', err);
+    statusEl.textContent = '⚠ Thất bại — lưu thô';
+    showToast('Xử lý ảnh thất bại — lưu thô', 'warn');
+    // Fallback: save whatever we have as raw
+    if (document.getElementById('raw-input').value.trim()) quickSaveRaw();
+    setTimeout(function(){ statusEl.textContent = ''; }, 4000);
+  }
+}
+
+// Resize image using canvas
+function resizeImage(file, maxWidth, quality) {
+  return new Promise(function(resolve, reject) {
+    var img = new Image();
+    var url = URL.createObjectURL(file);
+    img.onload = function() {
+      URL.revokeObjectURL(url);
+      var w = img.width, h = img.height;
+      if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      canvas.toBlob(function(blob){ resolve(blob); }, 'image/jpeg', quality);
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+function blobToBase64(blob) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function(){ resolve(reader.result.split(',')[1]); };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// LINK SECTION — paste URL → Grok summary → distill
+// ══════════════════════════════════════════════════════
+
+async function handleLinkDistill() {
+  var url = document.getElementById('link-input').value.trim();
+  if (!url) { showToast('Dán URL vào trước', 'error'); return; }
+  if (!/^https?:\/\/.+/.test(url)) { showToast('URL không hợp lệ', 'error'); return; }
+
+  var apiKey = localStorage.getItem('grok_api_key');
+  if (!apiKey) { showToast('Chưa có API key', 'error'); openApiKeyModal(); return; }
+
+  var btnEl = document.querySelector('.btn-extra[onclick="handleLinkDistill()"]');
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '...'; }
+
+  try {
+    var response = await fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: 'grok-2-latest',
+        messages: [{
+          role: 'user',
+          content: 'Bạn nhận một URL: ' + url + '\n\n' +
+            'Lưu ý quan trọng: bạn KHÔNG thể truy cập URL trực tiếp.\n' +
+            'Dựa vào domain, path, và cấu trúc URL, hãy:\n' +
+            '1. Suy đoán nội dung chính có thể của trang — ghi rõ đây là suy đoán\n' +
+            '2. Rút ra core idea khả dĩ nhất\n' +
+            '3. Đề xuất từ khoá liên quan\n\n' +
+            'Nếu là YouTube, podcast, hoặc media — ghi rõ loại nội dung.\n' +
+            'Nếu không đủ thông tin để đoán — nói thẳng "không đủ thông tin từ URL".\n\n' +
+            'Trả lời bằng tiếng Việt, súc tích. Không bịa đặt chi tiết cụ thể.'
+        }]
+      })
+    });
+
+    var data = await response.json();
+    var summary = ((data.choices || [])[0] || {}).message && data.choices[0].message.content || '';
+    if (!summary) throw new Error('Không lấy được nội dung');
+
+    // Inject summary + url into textarea, set pending link attachment
+    document.getElementById('raw-input').value = 'Nguồn: ' + url + '\n\n' + summary;
+    updateCharCount();
+    document.getElementById('link-input').value = '';
+
+    window._pendingAttachments = window._pendingAttachments || [];
+    window._pendingAttachments.push({ type: 'link', url: url, title: url });
+    renderAttachPreview();
+    await distillAndSaveWithAttachment(window._pendingAttachments.slice());
+    showToast('✓ Đã tóm tắt link — ' + window._pendingAttachments.length + ' attachment(s)', 'success');
+
+  } catch(err) {
+    console.error('Link error:', err);
+    showToast('Tóm tắt link thất bại', 'error');
+  } finally {
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Tóm Tắt'; }
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// INTENT SECTION — detect set_category commands in text
+// ══════════════════════════════════════════════════════
+
+async function detectIntent(rawText) {
+  var apiKey = localStorage.getItem('grok_api_key');
+  if (!apiKey) return null;
+
+  // Quick heuristic: only call Grok if text contains category-like phrases
+  var categoryHints = ['đưa vào', 'thuộc về', 'phân loại', 'danh mục', 'loại này', 'cho vào'];
+  var hasHint = categoryHints.some(function(h) { return rawText.toLowerCase().indexOf(h) !== -1; });
+  if (!hasHint) return null;
+
+  try {
+    var catList = CATEGORIES.join(', ');
+    var response = await fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: 'grok-2-latest',
+        messages: [{
+          role: 'user',
+          content: 'Phân tích câu sau và trả về JSON:\n"' + rawText.substring(0, 300) + '"\n\n' +
+            'Danh mục hợp lệ: ' + catList + '\n\n' +
+            'Nếu câu này có ý định chỉ định danh mục (ví dụ: "đưa cái này vào cơ khí", "thuộc về nông nghiệp"):\n' +
+            '{\n  "intent": "set_category",\n  "category": "tên danh mục khớp"\n}\n\n' +
+            'Nếu KHÔNG có ý định chỉ định danh mục:\n' +
+            '{\n  "intent": "none",\n  "category": ""\n}\n\n' +
+            'Chỉ trả JSON, không giải thích.'
+        }]
+      })
+    });
+    var data = await response.json();
+    var text = ((data.choices || [])[0] || {}).message && data.choices[0].message.content || '';
+    var cleaned = text.replace(/```json|```/g, '').trim();
+    return JSON.parse(cleaned);
+  } catch(e) {
+    console.warn('Intent detection failed:', e);
+    return null;
+  }
+}
+
+// ─── distillAndSaveWithAttachment — wraps distill + adds attachment ──
+async function distillAndSaveWithAttachment(attachment) {
+  var raw = document.getElementById('raw-input').value.trim();
+  if (!raw) return;
+
+  var apiKey = localStorage.getItem('grok_api_key');
+  if (!apiKey) return;
+
+  setLoading(true);
+  try {
+    // Intent detection (runs in parallel with distill prep)
+    var intentPromise = detectIntent(raw);
+
+    var response = await fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({ model: 'grok-2-latest', messages: [{ role: 'user', content: getEffectivePrompt(raw) }] })
+    });
+
+    if (!response.ok) {
+      var err = await response.json().catch(function(){ return {}; });
+      throw new Error((err.error && err.error.message) || ('HTTP ' + response.status));
+    }
+
+    var data = await response.json();
+    var text = ((data.choices || [])[0] || {}).message && data.choices[0].message.content || '';
+    var cleaned = text.replace(/```json|```/g, '').trim();
+    var parsed;
+    try { parsed = JSON.parse(cleaned); } catch(e) { throw new Error('Parse JSON thất bại'); }
+
+    // Await intent result
+    var intentResult = await intentPromise;
+    var detectedType = null;
+    if (intentResult && intentResult.intent === 'set_category' && intentResult.category) {
+      detectedType = normalizeType(intentResult.category);
+      showToast('Intent: đặt loại → ' + detectedType, 'success');
+    }
+
+    var entry = {
+      id: Date.now().toString(),
+      time: new Date().toISOString(),
+      type: detectedType || normalizeType(parsed.type),
+      title: (parsed.coreIdea || '').trim() || 'Không có tiêu đề',
+      summary: Array.isArray(parsed.summary) ? parsed.summary.filter(function(s){ return s.trim(); }) : [],
+      coreIdea: (parsed.coreIdea || '').trim(),
+      keywords: Array.isArray(parsed.keywords) ? parsed.keywords : [],
+      raw: raw,
+      attachments: Array.isArray(attachment) ? attachment : (attachment ? [attachment] : []),
+      hasAttachments: Array.isArray(attachment) ? attachment.length > 0 : !!attachment
+    };
+
+    if (!validateEntry(entry)) return;
+    await saveEntry(entry);
+    showResult(entry);
+    showToast('✓ Đã chắt lọc và lưu', 'success');
+    window._pendingAttachments = [];
+    renderAttachPreview();
+
+  } catch(err) {
+    console.error(err);
+    showToast('Chắt lọc thất bại — lưu thô', 'warn');
+    // Fallback: save as raw with attachments
+    var atts = Array.isArray(attachment) ? attachment : (attachment ? [attachment] : []);
+    var fallbackEntry = {
+      id: Date.now().toString(),
+      time: new Date().toISOString(),
+      type: CATEGORIES[CATEGORIES.length - 1],
+      title: raw.substring(0, 80) + (raw.length > 80 ? '...' : ''),
+      summary: ['(lưu thô do chắt lọc thất bại)'],
+      coreIdea: raw.substring(0, 80),
+      keywords: [],
+      raw: raw,
+      attachments: atts,
+      hasAttachments: atts.length > 0
+    };
+    window._pendingAttachments = [];
+    renderAttachPreview();
+    await saveEntry(fallbackEntry);
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// AI RECALL — UPGRADED
+// ══════════════════════════════════════════════════════
+
+// ─── RECALL CACHE (max 20 queries) ────────────────────
+var recallCache = {};
+var RECALL_CACHE_MAX = 20;
+
+function recallCacheGet(query) {
+  var key = query.toLowerCase().trim();
+  return recallCache[key] || null;
+}
+
+function recallCacheSet(query, result) {
+  var key = query.toLowerCase().trim();
+  // Evict oldest if at limit
+  var keys = Object.keys(recallCache);
+  if (keys.length >= RECALL_CACHE_MAX) {
+    delete recallCache[keys[0]];
+  }
+  recallCache[key] = result;
+}
+
+// ─── SMART DATA SAMPLING (40 newest + 40 random) ──────
+function buildRecallIdeasList() {
+  var newest = ideas.slice(0, 40);
+  var rest = ideas.slice(40);
+  // Shuffle rest without mutating original array
+  var shuffled = rest.slice().sort(function() { return 0.5 - Math.random(); });
+  var random = shuffled.slice(0, 40);
+  var combined = newest.concat(random);
+  // Strip to minimal fields — no raw text
+  return combined.map(function(e) {
+    return {
+      id: e.id,
+      title: e.title,
+      coreIdea: e.coreIdea || '',
+      keywords: e.keywords || [],
+      type: e.type || ''
+    };
+  });
+}
+
+// ─── IMPROVED RECALL PROMPT ───────────────────────────
+function buildRecallPrompt(query, ideasList) {
+  return 'BẠN LÀ HỆ THỐNG PHÂN TÍCH Ý TƯỞNG.\n\n' +
+    'USER QUERY: "' + query + '"\n\n' +
+    'DANH SÁCH IDEAS:\n' + JSON.stringify(ideasList) + '\n\n' +
+    'NHIỆM VỤ:\n' +
+    '1. Tìm tối đa 5 ideas liên quan nhất\n' +
+    '2. Đánh giá dựa trên:\n' +
+    '   - semantic similarity (ý nghĩa tương đồng)\n' +
+    '   - keyword overlap (từ khoá trùng nhau)\n' +
+    '   - cùng vấn đề hoặc hệ thống\n' +
+    '3. Ngoài việc match, hãy:\n' +
+    '   - phát hiện pattern chung giữa các ideas\n' +
+    '   - đề xuất cách kết hợp hoặc cải tiến\n\n' +
+    'QUY TẮC:\n' +
+    '- Nếu không có ideas nào liên quan, trả về matches rỗng\n' +
+    '- reason: ngắn gọn, cụ thể, tiếng Việt, tối đa 2 câu\n' +
+    '- sharedKeywords: các từ khoá hoặc khái niệm trùng nhau (mảng string)\n' +
+    '- insight: pattern mày nhận ra từ tập ideas liên quan\n' +
+    '- suggestion: cách kết hợp hoặc hướng cải tiến cụ thể\n' +
+    '- TOÀN BỘ nội dung trả về bằng tiếng Việt\n' +
+    '- CHỈ TRẢ VỀ JSON, không giải thích gì thêm\n\n' +
+    'ĐỊNH DẠNG BẮT BUỘC:\n' +
+    '{\n' +
+    '  "matches": [\n' +
+    '    {\n' +
+    '      "id": "idea_id",\n' +
+    '      "reason": "lý do liên quan ngắn gọn",\n' +
+    '      "sharedKeywords": ["kw1", "kw2"]\n' +
+    '    }\n' +
+    '  ],\n' +
+    '  "insight": "pattern chung nhận ra từ các ideas",\n' +
+    '  "suggestion": "cách kết hợp hoặc hướng phát triển cụ thể"\n' +
+    '}';
+}
+
+// ─── MAIN RECALL FUNCTION ─────────────────────────────
+async function runRecall() {
+  var query = document.getElementById('recall-input').value.trim();
+
+  // UX: empty input guard
+  if (!query) {
+    document.getElementById('recall-results').innerHTML =
+      '<div class="recall-empty">Nhập nội dung để recall</div>';
+    return;
+  }
+
+  if (ideas.length === 0) { showToast('Chưa có ý tưởng nào để tìm', 'error'); return; }
+
+  var apiKey = localStorage.getItem('grok_api_key');
+  if (!apiKey) { showToast('Chưa có API key', 'error'); openApiKeyModal(); return; }
+
+  // Cache hit — instant result
+  var cached = recallCacheGet(query);
+  if (cached) {
+    renderRecallResults(cached, query, true);
+    return;
+  }
+
+  var btn = document.getElementById('btn-recall');
+  btn.disabled = true;
+  btn.innerHTML = '<span style="opacity:0.7">...</span>';
+
+  // Loading state in panel
+  document.getElementById('recall-results').innerHTML =
+    '<div class="recall-empty" style="color:var(--accent2)">&#x1F9E0; Đang phân tích...</div>';
+
+  var ideasList = buildRecallIdeasList();
+
+  try {
+    var response = await fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: 'grok-2-latest',
+        messages: [{ role: 'user', content: buildRecallPrompt(query, ideasList) }]
+      })
+    });
+
+    if (!response.ok) {
+      var errData = await response.json().catch(function(){ return {}; });
+      throw new Error((errData.error && errData.error.message) || ('HTTP ' + response.status));
+    }
+
+    var data = await response.json();
+    var text = ((data.choices || [])[0] || {}).message && data.choices[0].message.content || '';
+    var cleaned = text.replace(/```json|```/g, '').trim();
+
+    var parsed;
+    try { parsed = JSON.parse(cleaned); }
+    catch(e) { throw new Error('Không parse được JSON từ Grok'); }
+
+    // Store in cache
+    recallCacheSet(query, parsed);
+    renderRecallResults(parsed, query, false);
+
+  } catch(err) {
+    console.error('Recall error:', err);
+    showToast('Recall thất bại: ' + err.message, 'error');
+    document.getElementById('recall-results').innerHTML =
+      '<div class="recall-empty">Recall thất bại.<br>Kiểm tra API key hoặc thử lại.</div>';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '&#x26A1; Recall';
+  }
+}
+
+// ─── RENDER RECALL RESULTS ────────────────────────────
+function renderRecallResults(parsed, query, fromCache) {
+  var container = document.getElementById('recall-results');
+  var matches    = (parsed && Array.isArray(parsed.matches)) ? parsed.matches : [];
+  var insight    = (parsed && parsed.insight)    ? parsed.insight    : '';
+  var suggestion = (parsed && parsed.suggestion) ? parsed.suggestion : '';
+
+  var cacheTag = fromCache
+    ? '<span style="font-family:\'Space Mono\',monospace;font-size:9px;color:var(--muted);padding:1px 6px;border:1px solid var(--border);border-radius:2px;margin-left:6px">cache</span>'
+    : '';
+
+  if (matches.length === 0) {
+    container.innerHTML =
+      '<div class="recall-empty">Không tìm thấy ý tưởng nào<br>liên quan đến "' + escHtml(query) + '"</div>' +
+      (insight    ? '<div class="recall-insight"><div class="recall-insight-label">&#x1F4CC; Insight</div><div class="recall-insight-text">' + escHtml(insight) + '</div></div>' : '') +
+      (suggestion ? '<div class="recall-suggestion"><div class="recall-suggestion-label">&#x1F4A1; Gợi Ý</div><div class="recall-suggestion-text">' + escHtml(suggestion) + '</div></div>' : '');
+    return;
+  }
+
+  var headerHtml = '<div style="padding:8px 16px 6px;display:flex;align-items:center;gap:4px">' +
+    '<span style="font-family:\'Space Mono\',monospace;font-size:10px;letter-spacing:2px;color:var(--accent2);text-transform:uppercase">' +
+    matches.length + ' kết quả' + '</span>' + cacheTag +
+    '</div>';
+
+  var matchesHtml = matches.map(function(m) {
+    var entry = ideas.find(function(e){ return e.id === m.id; });
+    if (!entry) return '';
+
+    // Highlight shared keywords in title
+    var titleHtml = highlightKeywords(entry.title, m.sharedKeywords || []);
+
+    // Render shared keywords as chips
+    var kwHtml = '';
+    if (m.sharedKeywords && m.sharedKeywords.length > 0) {
+      kwHtml = '<div class="recall-shared-kw">' +
+        m.sharedKeywords.map(function(k){
+          return '<span class="recall-kw-chip">' + escHtml(k) + '</span>';
+        }).join('') +
+      '</div>';
+    }
+
+    return '<div class="recall-match" onclick="openEntry(\'' + m.id + '\')" title="Click để mở">' +
+      '<div class="recall-match-title">' + titleHtml + '</div>' +
+      '<div class="recall-match-reason">' + escHtml(m.reason || '') + '</div>' +
+      kwHtml +
+    '</div>';
+  }).filter(Boolean).join('');
+
+  var insightHtml = insight
+    ? '<div class="recall-insight"><div class="recall-insight-label">&#x1F4CC; Pattern</div><div class="recall-insight-text">' + escHtml(insight) + '</div></div>'
+    : '';
+
+  var suggestionHtml = suggestion
+    ? '<div class="recall-suggestion"><div class="recall-suggestion-label">&#x1F4A1; Gợi Ý Kết Hợp</div><div class="recall-suggestion-text">' + escHtml(suggestion) + '</div></div>'
+    : '';
+
+  container.innerHTML = headerHtml + matchesHtml + insightHtml + suggestionHtml;
+}
+
+// ─── KEYWORD HIGHLIGHT HELPER ─────────────────────────
+function highlightKeywords(text, keywords) {
+  if (!keywords || keywords.length === 0) return escHtml(text);
+  var escaped = escHtml(text);
+  keywords.forEach(function(kw) {
+    if (!kw || kw.length < 2) return;
+    var safeKw = escHtml(kw);
+    // Case-insensitive replace — wrap with highlight span
+    var re = new RegExp('(' + safeKw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    escaped = escaped.replace(re, '<mark class="recall-highlight">$1</mark>');
+  });
+  return escaped;
+}
+
+// ─── UX: clear results when input is emptied ──────────
+document.addEventListener('DOMContentLoaded', function() {
+  var inp = document.getElementById('recall-input');
+  if (inp) {
+    inp.addEventListener('input', function() {
+      if (!inp.value.trim()) {
+        document.getElementById('recall-results').innerHTML =
+          '<div class="recall-empty">Nhập nội dung để recall</div>';
+      }
+    });
+  }
+});
+
+// ─── DRAG-TO-RESIZE recall panel ──────────────────────
+(function initRecallResize() {
+  document.addEventListener('DOMContentLoaded', function() {
+    var divider = document.getElementById('recall-divider');
+    if (!divider) return;
+    var dragging = false, startY = 0, startH = 0;
+
+    divider.addEventListener('mousedown', function(e) {
+      dragging = true;
+      startY = e.clientY;
+      startH = document.getElementById('recall-results').offsetHeight;
+      document.body.style.cursor = 'ns-resize';
+      document.body.style.userSelect = 'none';
+    });
+    document.addEventListener('mousemove', function(e) {
+      if (!dragging) return;
+      var newH = Math.max(50, Math.min(420, startH + (e.clientY - startY)));
+      var el = document.getElementById('recall-results');
+      el.style.height = newH + 'px';
+      el.style.maxHeight = newH + 'px';
+    });
+    document.addEventListener('mouseup', function() {
+      if (!dragging) return;
+      dragging = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    });
+  });
+})();
+
+// ══════════════════════════════════════════════════════
+// PROMPT MODAL — editable Grok distill prompt
+// ══════════════════════════════════════════════════════
+
+function openPromptModal() {
+  var custom = localStorage.getItem('grok_prompt_override');
+  var ta = document.getElementById('prompt-textarea');
+  // Show custom if set, else show default as placeholder baseline
+  ta.value = custom || buildPrompt('{{RAW_TEXT}}');
+  var statusEl = document.getElementById('prompt-status');
+  statusEl.textContent = custom ? '✓ Đang dùng prompt tuỳ chỉnh' : '(đang dùng prompt mặc định)';
+  statusEl.style.color = custom ? 'var(--accent)' : 'var(--muted)';
+  document.getElementById('prompt-overlay').classList.add('open');
+}
+
+function closePromptModal() {
+  document.getElementById('prompt-overlay').classList.remove('open');
+}
+
+function savePromptOverride() {
+  var val = document.getElementById('prompt-textarea').value.trim();
+  if (!val) { showToast('Prompt không được để trống', 'error'); return; }
+  localStorage.setItem('grok_prompt_override', val);
+  var statusEl = document.getElementById('prompt-status');
+  statusEl.textContent = '✓ Đã lưu prompt tuỳ chỉnh';
+  statusEl.style.color = 'var(--accent)';
+  showToast('✓ Đã lưu prompt tuỳ chỉnh', 'success');
+}
+
+function resetPromptOverride() {
+  localStorage.removeItem('grok_prompt_override');
+  document.getElementById('prompt-textarea').value = buildPrompt('{{RAW_TEXT}}');
+  var statusEl = document.getElementById('prompt-status');
+  statusEl.textContent = '(đã reset về prompt mặc định)';
+  statusEl.style.color = 'var(--muted)';
+  showToast('Đã reset về prompt mặc định', 'warn');
+}
+
+// Helper: get effective prompt for a raw text
+function getEffectivePrompt(rawText) {
+  var custom = localStorage.getItem('grok_prompt_override');
+  if (custom) {
+    // User wrote a custom prompt — two clean cases:
+    if (custom.includes('{{RAW_TEXT}}')) {
+      // Case A: placeholder present → replace exactly once, format is controlled by user
+      return custom.replace('{{RAW_TEXT}}', rawText);
+    } else {
+      // Case B: no placeholder → append as clearly labelled section
+      // This ensures Grok always sees the raw input, and the two sources never blend silently
+      return custom + '\n\n---\nNỘI DUNG ĐẦU VÀO:\n' + rawText;
+    }
+  }
+  return buildPrompt(rawText);
+}
+
+// ── ATTACHMENT PREVIEW QUEUE ─────────────────────────────────
+function renderAttachPreview() {
+  var el = document.getElementById('attach-preview');
+  var atts = window._pendingAttachments || [];
+  if (atts.length === 0) {
+    el.classList.remove('has-items');
+    el.innerHTML = '';
+    return;
+  }
+  el.classList.add('has-items');
+  el.innerHTML = atts.map(function(a, i) {
+    var icon = a.type === 'image' ? '&#x1F4F8;' : '&#x1F517;';
+    var name = a.type === 'image'
+      ? (a.path ? a.path.replace('images/', '') : 'ảnh.jpg')
+      : (a.url.length > 42 ? a.url.substring(0, 42) + '...' : a.url);
+    return '<div class="attach-preview-item">' +
+      '<span class="attach-preview-icon">' + icon + '</span>' +
+      '<span class="attach-preview-name">' + escHtml(name) + '</span>' +
+      '<button class="attach-preview-remove" onclick="removeAttachPreview(' + i + ')" title="Xoá">&#x2715;</button>' +
+    '</div>';
+  }).join('');
+}
+
+function removeAttachPreview(idx) {
+  window._pendingAttachments = window._pendingAttachments || [];
+  window._pendingAttachments.splice(idx, 1);
+  renderAttachPreview();
+  if (window._pendingAttachments.length === 0) {
+    document.getElementById('img-status').textContent = '';
+  } else {
+    document.getElementById('img-status').textContent = window._pendingAttachments.length + ' attachment(s)';
+  }
+}
+
+// ─── KEYBOARD SHORTCUTS ───────────────────────────────────────
+document.addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); distillAndSave(); }
+  if (e.key === 'Escape') {
+    closeModalDirect();
+    closeApiKeyModalDirect();
+    closeCatModal();
+    closeBackupModal();
+    closePromptModal();
+  }
+});
+</script>
+</body>
+</html>

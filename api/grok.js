@@ -45,7 +45,10 @@ export default async function handler(req, res) {
     const data = await upstream.json();
 
     if (!upstream.ok) {
-      return res.status(upstream.status).json({ error: data?.error?.message || 'Grok API error' });
+      console.error("GROK FULL ERROR:", data);
+      return res.status(upstream.status).json({
+        error: JSON.stringify(data)
+      });
     }
 
     return res.status(200).json(data);

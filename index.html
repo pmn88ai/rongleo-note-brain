@@ -584,15 +584,170 @@ mark.hl { background: rgba(53,241,200,.2); color: var(--accent2); border-radius:
     transform: none; flex: 1; border-right: 1px solid var(--border);
   }
   .page:last-child { border-right: none; }
-  /* show all 3 pages on desktop */
-  #page-capture { flex: 2; }
+  #page-capture { flex: 2.5; }
   #page-recall  { flex: 1.5; }
   #page-ideas   { flex: 1.2; }
+  /* Desktop preview: 2 columns */
+  #preview-cols { flex-direction: row !important; }
+  #preview-raw  { flex: 1; border-right: 1px solid var(--border); border-bottom: none !important; }
+  #preview-distill { flex: 1; }
 }
 @media (min-width: 1200px) {
-  #page-capture { flex: 2.2; }
+  #page-capture { flex: 2.8; }
   #page-recall  { flex: 1.8; }
-  #page-ideas   { flex: 1.5; }
+  #page-ideas   { flex: 1.4; }
+}
+
+/* ════════════════════════════════════════════
+   CAPTURE v2 — HEADER INPUT ROW
+════════════════════════════════════════════ */
+.capture-header-row {
+  display: flex; gap: 8px; padding: 10px 14px 0;
+  flex-shrink: 0;
+}
+#capture-title {
+  flex: 1; background: var(--bg);
+  border: 1px solid var(--border); color: var(--text);
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600;
+  padding: 8px 11px; border-radius: 4px; outline: none;
+  transition: border-color .15s; min-width: 0;
+}
+#capture-title:focus { border-color: var(--accent); }
+#capture-title::placeholder { color: var(--muted); font-weight: 400; }
+#capture-category {
+  background: var(--bg); border: 1px solid var(--border);
+  color: var(--text); font-family: 'Space Mono', monospace;
+  font-size: 11px; padding: 8px 10px; border-radius: 4px;
+  outline: none; cursor: pointer; transition: border-color .15s;
+  min-width: 100px; flex-shrink: 0;
+}
+#capture-category:focus { border-color: var(--accent); }
+
+/* ════════════════════════════════════════════
+   PREVIEW BLOCK (Phase 2)
+════════════════════════════════════════════ */
+#preview-block {
+  display: none; border-top: 1px solid var(--border);
+  flex-direction: column; flex-shrink: 0;
+  max-height: 340px;
+}
+#preview-block.visible { display: flex; }
+#preview-cols {
+  display: flex; flex-direction: column; flex: 1;
+  min-height: 0; overflow: hidden;
+}
+#preview-raw, #preview-distill {
+  flex: 1; overflow-y: auto; padding: 12px 14px;
+  -webkit-overflow-scrolling: touch;
+}
+#preview-raw {
+  border-bottom: 1px solid var(--border);
+}
+.preview-label {
+  font-family: 'Space Mono', monospace; font-size: 9px;
+  letter-spacing: 3px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 6px;
+}
+.preview-raw-text {
+  font-family: 'Space Mono', monospace; font-size: 11px;
+  color: var(--dim); line-height: 1.6;
+  white-space: pre-wrap; word-break: break-word;
+}
+.preview-distill-content { display: grid; gap: 8px; }
+.preview-field-label {
+  font-family: 'Space Mono', monospace; font-size: 9px;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--dim); margin-bottom: 2px;
+}
+.preview-core-idea {
+  font-size: 13px; font-weight: 700;
+  color: var(--accent2); line-height: 1.4;
+}
+.preview-summary {
+  font-size: 12px; color: var(--text); line-height: 1.6;
+}
+.preview-summary ul { list-style: none; padding: 0; }
+.preview-summary ul li::before { content: "→ "; color: var(--accent); }
+.preview-loading {
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'Space Mono', monospace; font-size: 11px;
+  color: var(--accent); padding: 16px 0;
+}
+
+/* 3-button action row */
+.capture-actions-v2 {
+  display: flex; gap: 6px; padding: 10px 14px;
+  border-top: 1px solid var(--border); flex-shrink: 0;
+}
+.capture-actions-v2 .btn { flex: 1; font-size: 11px; padding: 9px 6px; min-height: 40px; }
+#btn-save-distill { display: none; }
+#btn-save-distill.visible { display: flex; }
+
+/* ════════════════════════════════════════════
+   EDIT MODAL (Phase 4)
+════════════════════════════════════════════ */
+.edit-field-label {
+  font-family: 'Space Mono', monospace; font-size: 10px;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--dim); margin-bottom: 5px;
+}
+.edit-input {
+  width: 100%; background: var(--bg);
+  border: 1px solid var(--border); color: var(--text);
+  font-family: 'Syne', sans-serif; font-size: 13px;
+  padding: 9px 11px; border-radius: 4px; outline: none;
+  transition: border-color .15s; margin-bottom: 0;
+}
+.edit-input:focus { border-color: var(--accent); }
+.edit-select {
+  width: 100%; background: var(--bg);
+  border: 1px solid var(--border); color: var(--text);
+  font-family: 'Space Mono', monospace; font-size: 11px;
+  padding: 9px 11px; border-radius: 4px; outline: none;
+  cursor: pointer; transition: border-color .15s;
+}
+.edit-select:focus { border-color: var(--accent); }
+.edit-textarea {
+  width: 100%; background: var(--bg);
+  border: 1px solid var(--border); color: var(--text);
+  font-family: 'Space Mono', monospace; font-size: 11px;
+  padding: 10px 11px; border-radius: 4px; outline: none;
+  resize: vertical; line-height: 1.6;
+  transition: border-color .15s; min-height: 80px;
+}
+.edit-textarea:focus { border-color: var(--accent); }
+.edit-attach-row {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  padding: 10px 0; border-top: 1px solid var(--border);
+}
+.edit-attach-item {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 3px;
+  font-family: 'Space Mono', monospace; font-size: 11px; color: var(--dim);
+}
+.edit-attach-thumb {
+  width: 32px; height: 32px; object-fit: cover;
+  border-radius: 3px; cursor: pointer;
+}
+.edit-attach-remove {
+  background: none; border: none; color: var(--muted);
+  cursor: pointer; font-size: 11px; padding: 0 3px;
+  transition: color .1s;
+}
+.edit-attach-remove:hover { color: var(--danger); }
+
+/* Image zoom overlay */
+#img-zoom-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.92); z-index: 500;
+  align-items: center; justify-content: center;
+  cursor: zoom-out;
+}
+#img-zoom-overlay.open { display: flex; }
+#img-zoom-overlay img {
+  max-width: 95vw; max-height: 90vh;
+  object-fit: contain; border-radius: 4px;
 }
 </style>
 </head>
@@ -613,6 +768,15 @@ mark.hl { background: rgba(53,241,200,.2); color: var(--accent2); border-radius:
 
   <!-- ────── PAGE 1: CAPTURE ────── -->
   <div class="page active" id="page-capture">
+
+    <!-- HEADER: Title + Category -->
+    <div class="capture-header-row">
+      <input type="text" id="capture-title"
+        placeholder="Tiêu đề (tự điền nếu để trống)..."
+        autocomplete="off" spellcheck="false" />
+      <select id="capture-category"></select>
+    </div>
+
     <div class="capture-textarea-wrap">
       <textarea id="raw-input"
         placeholder="Dán bất cứ thứ gì... đoạn chat, ý tưởng, suy nghĩ lộn xộn..."
@@ -622,50 +786,70 @@ mark.hl { background: rgba(53,241,200,.2); color: var(--accent2); border-radius:
 
     <div class="loading-bar" id="loading-bar"></div>
 
-    <div class="capture-actions">
-      <button class="btn btn-primary" id="btn-distill" onclick="distillAndSave()">&#x26A1; Chắt Lọc &amp; Lưu</button>
-      <button class="btn btn-secondary" onclick="quickSaveRaw()">&#x1F4CB;</button>
-      <button class="btn btn-danger" onclick="clearCapture()">&#x1F5D1;</button>
-    </div>
-
+    <!-- ATTACHMENTS -->
     <div class="extra-section">
       <div class="extra-row">
         <button class="btn-extra" onclick="document.getElementById('img-input').click()">&#x1F4F8; Ảnh</button>
-        <!-- mobile: accept="image/*" capture="environment" allows camera -->
         <input type="file" id="img-input" accept="image/*" multiple style="display:none" onchange="handleImageUpload(this)" />
         <span class="extra-status" id="img-status"></span>
       </div>
       <div class="extra-row">
         <input type="url" id="link-input" class="link-field"
-          placeholder="&#x1F517; Dán link URL..."
+          placeholder="&#x1F517; Dán link URL rồi bấm +"
           autocomplete="off" spellcheck="false"
-          onkeydown="if(event.key==='Enter')handleLinkDistill()" />
-        <button class="btn-extra" onclick="handleLinkDistill()">Tóm Tắt</button>
+          onkeydown="if(event.key==='Enter')addLinkAttachment()" />
+        <button class="btn-extra" onclick="addLinkAttachment()">+</button>
       </div>
       <div id="attach-preview"></div>
     </div>
 
-    <div class="result-panel" id="result-panel">
-      <div class="result-label">&#x26A1; Đã Chắt Lọc</div>
-      <div class="result-field">
-        <div class="result-field-label">Ý Tưởng Cốt Lõi</div>
-        <div class="result-field-value core-idea-val" id="r-core-idea"></div>
-      </div>
-      <div class="result-field" style="display:flex;gap:16px;flex-wrap:wrap">
-        <div>
-          <div class="result-field-label">Loại</div>
-          <div id="r-type"></div>
+    <!-- ACTION BUTTONS v2 -->
+    <div class="capture-actions-v2">
+      <button class="btn btn-primary" id="btn-distill" onclick="runDistill()">&#x1F9E0; Chắt Lọc</button>
+      <button class="btn btn-secondary" onclick="saveRaw()">&#x1F4BE; Lưu RAW</button>
+      <button class="btn btn-secondary" id="btn-save-distill" onclick="saveDistilled()">&#x2705; Lưu CL</button>
+      <button class="btn btn-danger" onclick="clearCapture()" style="flex:0;padding:9px 12px">&#x1F5D1;</button>
+    </div>
+
+    <!-- PREVIEW BLOCK: RAW | DISTILL -->
+    <div id="preview-block">
+      <div id="preview-cols">
+        <div id="preview-raw">
+          <div class="preview-label">&#x1F4CB; Raw</div>
+          <div class="preview-raw-text" id="preview-raw-text"></div>
         </div>
-        <div style="flex:1">
-          <div class="result-field-label">Từ Khoá</div>
-          <div style="display:flex;flex-wrap:wrap;gap:4px" id="r-keywords"></div>
+        <div id="preview-distill">
+          <div class="preview-label">&#x26A1; Chắt Lọc</div>
+          <div id="preview-distill-content">
+            <div class="preview-loading" id="preview-loading" style="display:none">
+              <span class="loading-bar active" style="width:60px;height:2px;display:inline-block"></span>
+              Đang chắt lọc...
+            </div>
+            <div class="preview-distill-content" id="preview-distill-result" style="display:none">
+              <div>
+                <div class="preview-field-label">Ý tưởng cốt lõi</div>
+                <div class="preview-core-idea" id="pd-core-idea"></div>
+              </div>
+              <div>
+                <div class="preview-field-label">Tóm tắt</div>
+                <div class="preview-summary" id="pd-summary"></div>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <div>
+                  <div class="preview-field-label">Loại</div>
+                  <div id="pd-type"></div>
+                </div>
+                <div>
+                  <div class="preview-field-label">Từ khoá</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:4px" id="pd-keywords"></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="result-field">
-        <div class="result-field-label">Tóm Tắt</div>
-        <div class="result-field-value" id="r-summary"></div>
       </div>
     </div>
+
   </div>
 
   <!-- ────── PAGE 2: RECALL ────── -->
@@ -718,20 +902,25 @@ mark.hl { background: rgba(53,241,200,.2); color: var(--accent2); border-radius:
 
 <!-- ═══════════════════════ ENTRY DETAIL SHEET ═══════════════════════ -->
 <div class="overlay" id="entry-overlay" onclick="if(event.target===this)closeEntrySheet()">
-  <div class="sheet" style="max-width:640px">
+  <div class="sheet" style="max-width:680px">
     <div class="sheet-handle"></div>
     <div class="sheet-header">
       <div style="min-width:0;flex:1">
-        <div class="sheet-title" id="m-title"></div>
-        <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <!-- VIEW mode title -->
+        <div class="sheet-title" id="m-title" style="cursor:pointer" onclick="switchToEditMode()" title="Click để sửa"></div>
+        <div style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <span id="m-type-badge"></span>
-          <select class="type-select" id="m-type-select" onchange="changeEntryType(this.value)"></select>
           <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted)" id="m-time"></span>
         </div>
       </div>
-      <button class="sheet-close" onclick="closeEntrySheet()">&#x2715;</button>
+      <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+        <button class="btn-icon" id="btn-edit-mode" onclick="switchToEditMode()">&#x270F; Sửa</button>
+        <button class="sheet-close" onclick="closeEntrySheet()">&#x2715;</button>
+      </div>
     </div>
-    <div class="sheet-body">
+
+    <!-- VIEW BODY -->
+    <div class="sheet-body" id="entry-view-body">
       <div class="result-field">
         <div class="result-field-label">Ý Tưởng Cốt Lõi</div>
         <div class="result-field-value core-idea-val" id="m-core-idea"></div>
@@ -753,12 +942,63 @@ mark.hl { background: rgba(53,241,200,.2); color: var(--accent2); border-radius:
         <div class="attach-display" id="m-attachments"></div>
       </div>
     </div>
-    <div class="sheet-footer">
+
+    <!-- EDIT BODY -->
+    <div class="sheet-body" id="entry-edit-body" style="display:none">
+      <div>
+        <div class="edit-field-label">Tiêu Đề</div>
+        <input type="text" id="edit-title" class="edit-input" placeholder="Tiêu đề..." autocomplete="off" />
+      </div>
+      <div>
+        <div class="edit-field-label">Danh Mục</div>
+        <select id="edit-category" class="edit-select"></select>
+      </div>
+      <div>
+        <div class="edit-field-label">Ý Tưởng Cốt Lõi</div>
+        <input type="text" id="edit-core-idea" class="edit-input" placeholder="Core idea..." autocomplete="off" />
+      </div>
+      <div>
+        <div class="edit-field-label">Tóm Tắt (mỗi dòng = 1 điểm)</div>
+        <textarea id="edit-summary" class="edit-textarea" rows="5" placeholder="Điểm 1&#10;Điểm 2&#10;Điểm 3" spellcheck="false"></textarea>
+      </div>
+      <div>
+        <div class="edit-field-label">Nội Dung Thô</div>
+        <textarea id="edit-raw" class="edit-textarea" rows="5" spellcheck="false"></textarea>
+      </div>
+
+      <!-- Edit Attachments -->
+      <div>
+        <div class="edit-field-label">Đính Kèm</div>
+        <div id="edit-attachments-list" class="edit-attach-row"></div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn-extra" onclick="document.getElementById('edit-img-input').click()">&#x1F4F8; Thêm Ảnh</button>
+          <input type="file" id="edit-img-input" accept="image/*" multiple style="display:none" onchange="handleEditImageUpload(this)" />
+          <input type="url" id="edit-link-input" class="link-field" style="flex:1;min-width:120px"
+            placeholder="&#x1F517; Thêm link..."
+            onkeydown="if(event.key==='Enter')addEditLink()" />
+          <button class="btn-extra" onclick="addEditLink()">+</button>
+        </div>
+        <span class="extra-status" id="edit-img-status" style="display:block;margin-top:4px"></span>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="sheet-footer" id="entry-view-footer">
       <button class="btn btn-secondary" onclick="exportMarkdown()">&#x2193; MD</button>
       <button class="btn btn-secondary" onclick="copyMdCurrent()">&#x2398; Copy</button>
       <button class="btn btn-danger" onclick="deleteCurrentEntry()">Xoá</button>
     </div>
+    <div class="sheet-footer" id="entry-edit-footer" style="display:none">
+      <button class="btn btn-primary" style="flex:1" onclick="saveEditedEntry()">&#x1F4BE; Lưu</button>
+      <button class="btn btn-secondary" onclick="redistillEntry()">&#x1F9E0; Re-distill</button>
+      <button class="btn btn-danger" onclick="deleteCurrentEntry()">&#x1F5D1;</button>
+    </div>
   </div>
+</div>
+
+<!-- IMAGE ZOOM -->
+<div id="img-zoom-overlay" onclick="closeImgZoom()">
+  <img id="img-zoom-img" src="" alt="zoom" />
 </div>
 
 <!-- ═══════════════════════ SETTINGS SHEET ═══════════════════════ -->
@@ -844,7 +1084,7 @@ try {
   window._setSyncDot('err');
 }
 
-const PAGE_SIZE = 100;
+const PAGE_SIZE = 200; // Fix 3: cap at 200 docs per page
 let _lastDoc = null;
 
 // ── Image upload ──────────────────────────────────────────────
@@ -864,6 +1104,9 @@ window._fbSaveEntry = async function(entry) {
     window._setSyncDot('syncing');
     const plain = JSON.parse(JSON.stringify(entry));
     delete plain._local; // strip client-only flag before writing to Firestore
+    // Phase 1: inject identity fields
+    plain.user_id = 'RongLeo';
+    plain.app_id  = 'notebrain';
     const ref = await addDoc(collection(db, 'ideas'), { ...plain, _ts: serverTimestamp() });
     window._docIdMap = window._docIdMap || {};
     window._docIdMap[entry.id] = ref.id;
@@ -912,14 +1155,20 @@ window._fbLoadAll = async function() {
   if (!db) return null;
   try {
     window._setSyncDot('syncing');
-    // NOTE: orderBy('time') auto-index. Composite index needed if adding type filter later.
     const q = query(collection(db, 'ideas'), orderBy('time', 'desc'), limit(PAGE_SIZE));
     const snap = await getDocs(q);
     const rows = [];
     window._docIdMap = window._docIdMap || {};
     snap.forEach(d => {
       const data = { ...d.data() }; delete data._ts;
-      if (data.id) { rows.push(data); window._docIdMap[data.id] = d.id; }
+      // Phase 1: client-side filter — only show RongLeo/notebrain docs
+      // (or docs without user_id = legacy data before migration)
+      if (!data.id) return;
+      const isOwn = (!data.user_id && !data.app_id) ||
+                    (data.user_id === 'RongLeo' && data.app_id === 'notebrain');
+      if (!isOwn) return;
+      rows.push(data);
+      window._docIdMap[data.id] = d.id;
     });
     _lastDoc = snap.docs[snap.docs.length - 1] || null;
     window._hasMore = snap.docs.length === PAGE_SIZE;
@@ -939,7 +1188,12 @@ window._fbLoadMore = async function() {
     window._docIdMap = window._docIdMap || {};
     snap.forEach(d => {
       const data = { ...d.data() }; delete data._ts;
-      if (data.id) { rows.push(data); window._docIdMap[data.id] = d.id; }
+      if (!data.id) return;
+      const isOwn = (!data.user_id && !data.app_id) ||
+                    (data.user_id === 'RongLeo' && data.app_id === 'notebrain');
+      if (!isOwn) return;
+      rows.push(data);
+      window._docIdMap[data.id] = d.id;
     });
     _lastDoc = snap.docs[snap.docs.length - 1] || _lastDoc;
     window._hasMore = snap.docs.length === PAGE_SIZE;
@@ -1058,6 +1312,12 @@ window._setSyncDot = function(state) {
 };
 
 // ────────────────────────────────────────────────────
+// IDENTITY (Phase 1)
+// ────────────────────────────────────────────────────
+const USER_ID = 'RongLeo';
+const APP_ID  = 'notebrain';
+
+// ────────────────────────────────────────────────────
 // CATEGORIES
 // ────────────────────────────────────────────────────
 let CATEGORIES = (() => {
@@ -1118,8 +1378,10 @@ function switchPage(name) {
   try { ideas = JSON.parse(localStorage.getItem('distill_ideas') || '[]'); } catch(e) { ideas = []; }
   window._app_ideas = ideas;
   renderFilterRow();
+  renderCaptureCategoryDropdown();
   renderList();
   document.getElementById('raw-input').addEventListener('input', updateCharCount);
+  _attachDistillInvalidation(); // Fix 1: invalidate distill if input changes
 
   // Infinite scroll on ideas list
   const list = document.getElementById('ideas-list');
@@ -1136,6 +1398,7 @@ window.addEventListener('fb-ready', async () => {
     CATEGORIES = fbCats;
     localStorage.setItem('distill_categories', JSON.stringify(CATEGORIES));
     renderFilterRow();
+    renderCaptureCategoryDropdown();
     renderCatList();
   }
 
@@ -1324,95 +1587,25 @@ function safeParsegroqJSON(text) {
 // ────────────────────────────────────────────────────
 // DISTILL & SAVE
 // ────────────────────────────────────────────────────
-async function distillAndSave() {
-  const raw = document.getElementById('raw-input').value.trim();
-  if (!raw) { showToast('Dán text vào trước đã', 'error'); return; }
-
-  setLoading(true);
-  try {
-    const [intentResult, groqData] = await Promise.all([
-      detectIntent(raw),
-      callgroq([{ role: 'user', content: getEffectivePrompt(raw) }])
-    ]);
-
-    const text    = groqData.choices?.[0]?.message?.content || '';
-    const parsed  = safeParsegroqJSON(text);
-
-    let detectedType = null;
-    if (intentResult?.intent === 'set_category' && intentResult.category) {
-      detectedType = normalizeType(intentResult.category);
-      showToast('Intent → ' + detectedType, 'success');
-    }
-
-    const pendingAtts = (window._pendingAttachments || []).slice();
-    window._pendingAttachments = [];
-    renderAttachPreview();
-
-    const entry = {
-      id:             Date.now().toString(),
-      time:           new Date().toISOString(),
-      type:           detectedType || normalizeType(parsed.type),
-      title:          (parsed.coreIdea || '').trim() || 'Không có tiêu đề',
-      summary:        Array.isArray(parsed.summary) ? parsed.summary.filter(s => s.trim()) : [],
-      coreIdea:       (parsed.coreIdea || '').trim(),
-      keywords:       Array.isArray(parsed.keywords) ? parsed.keywords : [],
-      raw,
-      attachments:    pendingAtts,
-      hasAttachments: pendingAtts.length > 0
-    };
-
-    if (!validateEntry(entry)) return;
-    await saveEntry(entry);
-    showResult(entry);
-    showToast('✓ Đã chắt lọc và lưu', 'success');
-
-  } catch(err) {
-    console.error(err);
-    showToast('Thất bại: ' + err.message, 'error');
-  } finally {
-    setLoading(false);
-  }
-}
-
-async function quickSaveRaw() {
-  const raw = document.getElementById('raw-input').value.trim();
-  if (!raw) { showToast('Chưa có gì để lưu', 'error'); return; }
-  const pendingAtts = (window._pendingAttachments || []).slice();
-  window._pendingAttachments = [];
-  renderAttachPreview();
-  const preview = raw.substring(0, 80) + (raw.length > 80 ? '...' : '');
-  await saveEntry({
-    id: Date.now().toString(), time: new Date().toISOString(),
-    type: CATEGORIES[CATEGORIES.length - 1], title: preview,
-    summary: ['(lưu thô)'], coreIdea: preview, keywords: [], raw,
-    attachments: pendingAtts, hasAttachments: pendingAtts.length > 0
-  });
-  showToast('✓ Đã lưu thô', 'success');
-}
+// (distillAndSave and quickSaveRaw replaced by runDistill/saveRaw/saveDistilled above)
 
 function clearCapture() {
   document.getElementById('raw-input').value = '';
   document.getElementById('link-input').value = '';
+  document.getElementById('capture-title').value = '';
   updateCharCount();
-  document.getElementById('result-panel').classList.remove('visible');
+  document.getElementById('preview-block').classList.remove('visible');
+  document.getElementById('btn-save-distill').classList.remove('visible');
+  _pendingDistillResult = null;
+  _distillInputSnapshot = '';
   window._pendingAttachments = [];
+  window._pendingOcrText = '';  // Fix 2: clear OCR
+  clearOcrText();
   renderAttachPreview();
   document.getElementById('img-status').textContent = '';
 }
 
-// ────────────────────────────────────────────────────
-// RESULT PANEL
-// ────────────────────────────────────────────────────
-function showResult(entry) {
-  document.getElementById('r-core-idea').textContent = entry.coreIdea || '—';
-  document.getElementById('r-type').innerHTML = typeBadge(entry.type);
-  document.getElementById('r-keywords').innerHTML = (entry.keywords || []).map(k => `<span class="kw-tag">${esc(k)}</span>`).join('');
-  const sumEl = document.getElementById('r-summary');
-  sumEl.innerHTML = entry.summary?.length
-    ? '<ul>' + entry.summary.map(s => `<li>${esc(s)}</li>`).join('') + '</ul>'
-    : '—';
-  document.getElementById('result-panel').classList.add('visible');
-}
+// (showResult replaced by preview block in v2)
 
 // ────────────────────────────────────────────────────
 // STORAGE
@@ -1537,13 +1730,14 @@ async function loadMoreIdeas() {
 }
 
 // ────────────────────────────────────────────────────
-// ENTRY DETAIL SHEET
+// ENTRY DETAIL SHEET — VIEW + EDIT (Phase 4)
 // ────────────────────────────────────────────────────
 function openEntry(id) {
   const entry = ideas.find(e => e.id === id);
   if (!entry) return;
   currentEntryId = id;
 
+  // Render VIEW mode
   document.getElementById('m-title').textContent      = entry.title;
   document.getElementById('m-type-badge').innerHTML   = typeBadge(entry.type);
   document.getElementById('m-time').textContent       = formatTime(entry.time);
@@ -1559,26 +1753,182 @@ function openEntry(id) {
     ? entry.keywords.map(k => `<span class="kw-tag">${esc(k)}</span>`).join('')
     : '<span style="color:var(--muted)">—</span>';
 
-  const sel = document.getElementById('m-type-select');
-  sel.innerHTML = CATEGORIES.map(c =>
-    `<option value="${esc(c)}"${c===entry.type?' selected':''}>${esc(c)}</option>`).join('');
-
-  // Attachments
+  // Attachments (view)
   const atts = entry.attachments || [];
   const attWrap = document.getElementById('m-attachments-wrap');
   const attEl   = document.getElementById('m-attachments');
   if (atts.length) {
     attEl.innerHTML = atts.map(a => {
-      if (a.type === 'image') return `<img class="attach-img" src="${esc(a.url)}" alt="ảnh" onclick="window.open('${esc(a.url)}','_blank')" />`;
+      if (a.type === 'image') return `<img class="attach-img" src="${esc(a.url)}" alt="ảnh" onclick="openImgZoom('${esc(a.url)}')" style="cursor:zoom-in" />`;
       if (a.type === 'link')  return `<a class="attach-link-card" href="${esc(a.url)}" target="_blank" rel="noopener"><span>🔗</span><span class="attach-link-url">${esc(a.url)}</span></a>`;
       return '';
     }).join('');
     attWrap.style.display = '';
   } else { attWrap.style.display = 'none'; }
 
+  // Show VIEW mode, hide EDIT mode
+  document.getElementById('entry-view-body').style.display   = '';
+  document.getElementById('entry-edit-body').style.display   = 'none';
+  document.getElementById('entry-view-footer').style.display = '';
+  document.getElementById('entry-edit-footer').style.display = 'none';
+  document.getElementById('btn-edit-mode').textContent = '✏ Sửa';
+
   document.querySelectorAll('.idea-item').forEach(el => el.classList.remove('active'));
   document.querySelector(`.idea-item[data-id="${id}"]`)?.classList.add('active');
   document.getElementById('entry-overlay').classList.add('open');
+}
+
+function switchToEditMode() {
+  const entry = ideas.find(e => e.id === currentEntryId);
+  if (!entry) return;
+
+  // Populate edit fields
+  document.getElementById('edit-title').value    = entry.title || '';
+  document.getElementById('edit-core-idea').value = entry.coreIdea || '';
+  document.getElementById('edit-raw').value      = entry.raw || '';
+  document.getElementById('edit-summary').value  = (entry.summary || []).join('\n');
+
+  const catSel = document.getElementById('edit-category');
+  catSel.innerHTML = CATEGORIES.map(c =>
+    `<option value="${esc(c)}"${c === entry.type ? ' selected' : ''}>${esc(c)}</option>`
+  ).join('');
+
+  // Edit attachments list
+  window._editAttachments = JSON.parse(JSON.stringify(entry.attachments || []));
+  renderEditAttachments();
+
+  // Switch UI
+  document.getElementById('entry-view-body').style.display   = 'none';
+  document.getElementById('entry-edit-body').style.display   = '';
+  document.getElementById('entry-view-footer').style.display = 'none';
+  document.getElementById('entry-edit-footer').style.display = '';
+  document.getElementById('btn-edit-mode').textContent = '← Xem';
+  document.getElementById('btn-edit-mode').onclick = () => openEntry(currentEntryId);
+}
+
+function renderEditAttachments() {
+  const atts = window._editAttachments || [];
+  const el   = document.getElementById('edit-attachments-list');
+  if (!atts.length) { el.innerHTML = '<span style="color:var(--muted);font-size:11px;font-family:\'Space Mono\',monospace">Chưa có đính kèm</span>'; return; }
+  el.innerHTML = atts.map((a, i) => {
+    if (a.type === 'image') {
+      return `<div class="edit-attach-item">
+        <img class="edit-attach-thumb" src="${esc(a.url)}" onclick="openImgZoom('${esc(a.url)}')" />
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px">📸 ảnh</span>
+        <button class="edit-attach-remove" onclick="removeEditAttach(${i})">✕</button>
+      </div>`;
+    }
+    if (a.type === 'link') {
+      const short = a.url.length > 30 ? a.url.substring(0, 30) + '...' : a.url;
+      return `<div class="edit-attach-item">
+        <span>🔗</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(short)}</span>
+        <button class="edit-attach-remove" onclick="removeEditAttach(${i})">✕</button>
+      </div>`;
+    }
+    return '';
+  }).join('');
+}
+
+function removeEditAttach(idx) {
+  window._editAttachments.splice(idx, 1);
+  renderEditAttachments();
+}
+
+async function handleEditImageUpload(input) {
+  const files = Array.from(input.files || []);
+  if (!files.length) return;
+  input.value = '';
+  const statusEl = document.getElementById('edit-img-status');
+
+  for (let i = 0; i < files.length; i++) {
+    statusEl.textContent = `Upload ảnh ${i+1}/${files.length}...`;
+    try {
+      const blob    = await fileToBlob(files[i]);
+      const resized = await resizeImage(blob, 800, 0.8);
+      const result  = await window._fbUploadImage(resized);
+      window._editAttachments.push({ type: 'image', url: result.url, path: result.path });
+      renderEditAttachments();
+    } catch(err) {
+      showToast('Upload lỗi: ' + err.message, 'error');
+    }
+  }
+  statusEl.textContent = '';
+}
+
+function addEditLink() {
+  const url = document.getElementById('edit-link-input').value.trim();
+  if (!url || !/^https?:\/\/.+/.test(url)) { showToast('URL không hợp lệ', 'error'); return; }
+  window._editAttachments.push({ type: 'link', url, title: url });
+  document.getElementById('edit-link-input').value = '';
+  renderEditAttachments();
+  showToast('✓ Đã thêm link', 'success');
+}
+
+async function saveEditedEntry() {
+  const entry = ideas.find(e => e.id === currentEntryId);
+  if (!entry) return;
+
+  const newTitle    = document.getElementById('edit-title').value.trim();
+  const newCoreIdea = document.getElementById('edit-core-idea').value.trim();
+  const newCategory = document.getElementById('edit-category').value;
+  const newRaw      = document.getElementById('edit-raw').value.trim();
+  const newSummary  = document.getElementById('edit-summary').value
+    .split('\n').map(s => s.trim()).filter(Boolean);
+  const newAtts     = window._editAttachments || [];
+
+  entry.title       = resolveTitle(newTitle, newCoreIdea, newRaw);
+  entry.coreIdea    = newCoreIdea;
+  entry.type        = newCategory;
+  entry.raw         = newRaw;
+  entry.summary     = newSummary;
+  entry.attachments = newAtts;
+  entry.hasAttachments = newAtts.length > 0;
+
+  cacheLocal();
+  renderList();
+
+  const fields = {
+    title: entry.title, coreIdea: entry.coreIdea, type: entry.type,
+    raw: entry.raw, summary: entry.summary,
+    attachments: entry.attachments, hasAttachments: entry.hasAttachments
+  };
+  if (window._fbReady) window._fbUpdateEntry(currentEntryId, fields);
+
+  showToast('✓ Đã lưu', 'success');
+  openEntry(currentEntryId); // switch back to view mode
+}
+
+async function redistillEntry() {
+  const entry = ideas.find(e => e.id === currentEntryId);
+  if (!entry) return;
+
+  const raw = document.getElementById('edit-raw').value.trim() || entry.raw || '';
+  if (!raw) { showToast('Không có nội dung để distill', 'error'); return; }
+
+  const btn = document.getElementById('entry-edit-footer').querySelector('[onclick="redistillEntry()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '🧠 Đang...'; }
+
+  try {
+    const groqData = await callgroq([{ role: 'user', content: getEffectivePrompt(raw.slice(0, 2000)) }]);
+    const text     = groqData.choices?.[0]?.message?.content || '';
+    const parsed   = safeParsegroqJSON(text);
+
+    // overwrite: summary, coreIdea, keywords, type — keep: title, category (user's), attachments
+    document.getElementById('edit-core-idea').value = parsed.coreIdea || '';
+    document.getElementById('edit-summary').value   = (parsed.summary || []).join('\n');
+
+    // Update type dropdown if AI returns valid type
+    const aiType = normalizeType(parsed.type);
+    const catSel = document.getElementById('edit-category');
+    for (const opt of catSel.options) { if (opt.value === aiType) { opt.selected = true; break; } }
+
+    showToast('✓ Re-distill xong — xem lại và bấm Lưu', 'success');
+  } catch(err) {
+    showToast('Re-distill thất bại: ' + err.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🧠 Re-distill'; }
+  }
 }
 
 function changeEntryType(newType) {
@@ -1595,7 +1945,21 @@ function changeEntryType(newType) {
 function closeEntrySheet() {
   document.getElementById('entry-overlay').classList.remove('open');
   currentEntryId = null;
+  window._editAttachments = [];
   document.querySelectorAll('.idea-item').forEach(el => el.classList.remove('active'));
+  // Reset edit mode button
+  const btn = document.getElementById('btn-edit-mode');
+  if (btn) { btn.textContent = '✏ Sửa'; btn.onclick = switchToEditMode; }
+}
+
+// Image zoom (Phase 3)
+function openImgZoom(url) {
+  document.getElementById('img-zoom-img').src = url;
+  document.getElementById('img-zoom-overlay').classList.add('open');
+}
+function closeImgZoom() {
+  document.getElementById('img-zoom-overlay').classList.remove('open');
+  document.getElementById('img-zoom-img').src = '';
 }
 
 function deleteCurrentEntry() {
@@ -1632,12 +1996,12 @@ function copyMdCurrent() {
 }
 
 // ────────────────────────────────────────────────────
-// IMAGE UPLOAD — multi-file, sequential processing
+// IMAGE UPLOAD — upload + OCR only, NO auto distill (Phase 3)
 // ────────────────────────────────────────────────────
 async function handleImageUpload(input) {
   const files = Array.from(input.files || []);
   if (!files.length) return;
-  input.value = ''; // reset so re-selecting same file still triggers onchange
+  input.value = '';
 
   const statusEl = document.getElementById('img-status');
   const allExtracted = [];
@@ -1647,14 +2011,11 @@ async function handleImageUpload(input) {
     statusEl.textContent = `Ảnh ${i + 1}/${files.length}: đang đọc...`;
 
     try {
-      // Step 1: mobile-safe blob conversion
       const fileBlob = await fileToBlob(file);
 
-      // Step 2: resize (max 800px, quality 0.8)
       statusEl.textContent = `Ảnh ${i + 1}/${files.length}: đang nén...`;
       const resizedBlob = await resizeImage(fileBlob, 800, 0.8);
 
-      // Step 3: upload to Firebase Storage
       statusEl.textContent = `Ảnh ${i + 1}/${files.length}: đang upload...`;
       let url = null, path = null;
       try {
@@ -1663,15 +2024,14 @@ async function handleImageUpload(input) {
         path = result.path;
       } catch(uploadErr) {
         console.warn('Storage upload failed for', file.name, uploadErr);
-        // Continue — still extract text even if Storage fails
       }
 
       if (url) {
         window._pendingAttachments.push({ type: 'image', url, path });
-        renderAttachPreview(); // update preview after each successful upload
+        renderAttachPreview();
       }
 
-      // Step 4: extract text via groq vision
+      // OCR — extract text into textarea (no auto-save)
       statusEl.textContent = `Ảnh ${i + 1}/${files.length}: AI đang đọc...`;
       const base64 = await blobToBase64(resizedBlob);
       const data   = await callgroq([{
@@ -1691,20 +2051,99 @@ async function handleImageUpload(input) {
     }
   }
 
-  // Combine all extracted text and run distill once
+  // Fix 2: store OCR separately — do NOT append to raw textarea
   if (allExtracted.length) {
-    statusEl.textContent = `✓ Đã xử lý ${files.length} ảnh — đang chắt lọc...`;
-    document.getElementById('raw-input').value = allExtracted.join('\n\n---\n\n');
-    updateCharCount();
-    await distillAndSave();
-    setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    window._pendingOcrText = (window._pendingOcrText || '') +
+      (window._pendingOcrText ? '\n\n---\n\n' : '') +
+      allExtracted.join('\n\n---\n\n');
+    updateOcrBadge();
+    statusEl.textContent = `✓ OCR ${files.length} ảnh — sẵn sàng combine khi Chắt Lọc`;
+    setTimeout(() => { statusEl.textContent = ''; }, 4000);
   } else {
     statusEl.textContent = '⚠ Không trích xuất được nội dung nào';
     setTimeout(() => { statusEl.textContent = ''; }, 4000);
   }
 }
 
-// fileToBlob — mobile-safe conversion (avoids blob/canvas issues on some iOS)
+// ────────────────────────────────────────────────────
+// OCR TEXT MANAGEMENT (Fix 2)
+// ────────────────────────────────────────────────────
+window._pendingOcrText = '';
+
+function updateOcrBadge() {
+  let badge = document.getElementById('ocr-badge');
+  if (!window._pendingOcrText) {
+    if (badge) badge.remove();
+    return;
+  }
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.id = 'ocr-badge';
+    badge.style.cssText = 'font-family:"Space Mono",monospace;font-size:10px;color:var(--accent2);' +
+      'padding:2px 8px;border:1px solid rgba(53,241,200,.3);border-radius:2px;white-space:nowrap;cursor:pointer';
+    badge.title = 'Click để xem nội dung OCR';
+    badge.onclick = () => {
+      const preview = window._pendingOcrText.substring(0, 300);
+      alert('OCR text (sẽ combine khi Chắt Lọc):\n\n' + preview + (window._pendingOcrText.length > 300 ? '\n...' : ''));
+    };
+    document.getElementById('img-status').after(badge);
+  }
+  const lines = window._pendingOcrText.split('\n').length;
+  badge.textContent = `📝 OCR: ${lines} dòng`;
+}
+
+function clearOcrText() {
+  window._pendingOcrText = '';
+  updateOcrBadge();
+}
+
+// ────────────────────────────────────────────────────
+// LINK ATTACHMENT (Phase 3) — just add to pending, no auto distill
+// ────────────────────────────────────────────────────
+function addLinkAttachment() {
+  const url = document.getElementById('link-input').value.trim();
+  if (!url) { showToast('Dán URL vào trước', 'error'); return; }
+  if (!/^https?:\/\/.+/.test(url)) { showToast('URL không hợp lệ', 'error'); return; }
+  window._pendingAttachments.push({ type: 'link', url, title: url });
+  document.getElementById('link-input').value = '';
+  renderAttachPreview();
+  showToast('✓ Đã thêm link', 'success');
+}
+
+// Keep old handleLinkDistill for backward compat (now just adds attachment + puts URL in textarea)
+async function handleLinkDistill() {
+  const url = document.getElementById('link-input').value.trim();
+  if (!url) { showToast('Dán URL vào trước', 'error'); return; }
+  if (!/^https?:\/\/.+/.test(url)) { showToast('URL không hợp lệ', 'error'); return; }
+
+  const btn = document.querySelector('.btn-extra[onclick="handleLinkDistill()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+  try {
+    const data = await callgroq([{
+      role: 'user',
+      content: `Bạn nhận một URL: ${url}\n\nLưu ý: bạn KHÔNG thể truy cập URL trực tiếp.\nDựa vào domain và path, hãy:\n1. Suy đoán nội dung chính — ghi rõ đây là suy đoán\n2. Rút ra core idea khả dĩ nhất\n3. Đề xuất từ khoá liên quan\n\nNếu không đủ thông tin → nói thẳng "không đủ thông tin từ URL".\nTrả lời bằng tiếng Việt, súc tích. Không bịa đặt chi tiết cụ thể.`
+    }]);
+
+    const summary = data.choices?.[0]?.message?.content || '';
+    const ta = document.getElementById('raw-input');
+    const existing = ta.value.trim();
+    ta.value = existing
+      ? existing + '\n\nNguồn: ' + url + '\n\n' + summary
+      : 'Nguồn: ' + url + '\n\n' + summary;
+    document.getElementById('link-input').value = '';
+    updateCharCount();
+    window._pendingAttachments.push({ type: 'link', url, title: url });
+    renderAttachPreview();
+    showToast('✓ Đã tóm tắt link — bấm Chắt Lọc hoặc Lưu RAW', 'success');
+
+  } catch(err) {
+    console.error('Link error:', err);
+    showToast('Tóm tắt link thất bại', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Tóm Tắt'; }
+  }
+}
 function fileToBlob(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -1741,43 +2180,6 @@ function blobToBase64(blob) {
     r.onerror = reject;
     r.readAsDataURL(blob);
   });
-}
-
-// ────────────────────────────────────────────────────
-// LINK DISTILL
-// ────────────────────────────────────────────────────
-async function handleLinkDistill() {
-  const url = document.getElementById('link-input').value.trim();
-  if (!url) { showToast('Dán URL vào trước', 'error'); return; }
-  if (!/^https?:\/\/.+/.test(url)) { showToast('URL không hợp lệ', 'error'); return; }
-
-  const btn = document.querySelector('.btn-extra[onclick="handleLinkDistill()"]');
-  if (btn) { btn.disabled = true; btn.textContent = '...'; }
-
-  try {
-    const data = await callgroq([{
-      role: 'user',
-      content: `Bạn nhận một URL: ${url}\n\nLưu ý: bạn KHÔNG thể truy cập URL trực tiếp.\nDựa vào domain và path, hãy:\n1. Suy đoán nội dung chính — ghi rõ đây là suy đoán\n2. Rút ra core idea khả dĩ nhất\n3. Đề xuất từ khoá liên quan\n\nNếu không đủ thông tin → nói thẳng "không đủ thông tin từ URL".\nTrả lời bằng tiếng Việt, súc tích. Không bịa đặt chi tiết cụ thể.`
-    }]);
-
-    const summary = data.choices?.[0]?.message?.content || '';
-    if (!summary) throw new Error('Không lấy được nội dung');
-
-    document.getElementById('raw-input').value = `Nguồn: ${url}\n\n${summary}`;
-    document.getElementById('link-input').value = '';
-    updateCharCount();
-
-    window._pendingAttachments.push({ type: 'link', url, title: url });
-    renderAttachPreview();
-    await distillAndSave();
-    showToast('✓ Đã tóm tắt link', 'success');
-
-  } catch(err) {
-    console.error('Link error:', err);
-    showToast('Tóm tắt link thất bại', 'error');
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Tóm Tắt'; }
-  }
 }
 
 // ────────────────────────────────────────────────────
@@ -1932,6 +2334,7 @@ function addCategory() {
   input.value = '';
   renderCatList();
   renderFilterRow();
+  renderCaptureCategoryDropdown();
   showToast('✓ Đã thêm: ' + name, 'success');
 }
 function deleteCategory(idx) {
@@ -1940,6 +2343,7 @@ function deleteCategory(idx) {
   saveCategories();
   renderCatList();
   renderFilterRow();
+  renderCaptureCategoryDropdown();
   showToast('Đã xoá: ' + removed, 'warn');
 }
 
@@ -2031,8 +2435,186 @@ function setLoading(active) {
   document.getElementById('loading-bar').classList.toggle('active', active);
   const btn = document.getElementById('btn-distill');
   btn.disabled = active;
-  btn.textContent = active ? 'Đang chắt lọc...' : '⚡ Chắt Lọc & Lưu';
+  btn.textContent = active ? 'Đang chắt lọc...' : '🧠 Chắt Lọc';
 }
+
+// ────────────────────────────────────────────────────
+// CAPTURE CATEGORY DROPDOWN
+// ────────────────────────────────────────────────────
+function renderCaptureCategoryDropdown() {
+  const sel = document.getElementById('capture-category');
+  if (!sel) return;
+  sel.innerHTML = CATEGORIES.map(c =>
+    `<option value="${esc(c)}">${esc(c)}</option>`
+  ).join('');
+}
+
+// ────────────────────────────────────────────────────
+// TITLE HELPER
+// ────────────────────────────────────────────────────
+function resolveTitle(userInput, coreIdea, raw) {
+  if (userInput?.trim()) return userInput.trim();
+  if (coreIdea?.trim()) return coreIdea.trim();
+  return (raw || '').trim().substring(0, 60) + ((raw || '').length > 60 ? '...' : '');
+}
+
+// ────────────────────────────────────────────────────
+// _pendingDistillResult — holds last AI result until user saves
+// ────────────────────────────────────────────────────
+let _pendingDistillResult = null;
+let _distillInputSnapshot = ''; // snapshot of raw at distill time
+
+// Invalidate distill result if user edits input after distilling
+function _attachDistillInvalidation() {
+  const ta = document.getElementById('raw-input');
+  if (!ta) return;
+  ta.addEventListener('input', () => {
+    if (!_pendingDistillResult) return;
+    const current = ta.value.trim();
+    if (current !== _distillInputSnapshot) {
+      _pendingDistillResult = null;
+      _distillInputSnapshot = '';
+      document.getElementById('btn-save-distill').classList.remove('visible');
+      document.getElementById('preview-block').classList.remove('visible');
+      showToast('⚠ Input đã thay đổi — distill lại trước khi lưu CL', 'warn');
+    }
+  });
+}
+
+// ────────────────────────────────────────────────────
+// STEP 1: RUN DISTILL (no save)
+// ────────────────────────────────────────────────────
+async function runDistill() {
+  const raw = document.getElementById('raw-input').value.trim();
+  if (!raw && !window._pendingOcrText) { showToast('Dán text vào trước đã', 'error'); return; }
+
+  // Fix 2: combine raw + OCR for AI, keep separate for storage
+  const ocrText    = window._pendingOcrText || '';
+  const combined   = ocrText ? (raw ? raw + '\n\n[OCR từ ảnh]\n' + ocrText : ocrText) : raw;
+  const inputForAI = combined.slice(0, 2000);
+  const rawForSave = raw;
+
+  // Show preview block
+  const previewBlock = document.getElementById('preview-block');
+  previewBlock.classList.add('visible');
+  document.getElementById('preview-raw-text').textContent = raw || '(chỉ có OCR text)';
+  document.getElementById('preview-loading').style.display = 'flex';
+  document.getElementById('preview-distill-result').style.display = 'none';
+  document.getElementById('btn-save-distill').classList.remove('visible');
+
+  setLoading(true);
+  _pendingDistillResult = null;
+  _distillInputSnapshot = rawForSave; // Fix 1: snapshot
+
+  try {
+    const [intentResult, groqData] = await Promise.all([
+      detectIntent(inputForAI),
+      callgroq([{ role: 'user', content: getEffectivePrompt(inputForAI) }])
+    ]);
+
+    const text   = groqData.choices?.[0]?.message?.content || '';
+    const parsed = safeParsegroqJSON(text);
+
+    let detectedType = null;
+    if (intentResult?.intent === 'set_category' && intentResult.category) {
+      detectedType = normalizeType(intentResult.category);
+      showToast('Intent → ' + detectedType, 'success');
+    }
+
+    _pendingDistillResult = {
+      parsed, detectedType,
+      raw:      rawForSave,  // Fix 2: user-typed only
+      ocr_text: ocrText,     // Fix 2: OCR separate
+      snapshot: rawForSave   // Fix 1: invalidation ref
+    };
+
+    document.getElementById('preview-loading').style.display = 'none';
+    document.getElementById('preview-distill-result').style.display = 'grid';
+    document.getElementById('pd-core-idea').textContent = parsed.coreIdea || '—';
+    document.getElementById('pd-type').innerHTML = typeBadge(detectedType || normalizeType(parsed.type));
+    document.getElementById('pd-keywords').innerHTML = (parsed.keywords || []).map(k => `<span class="kw-tag">${esc(k)}</span>`).join('');
+    const sumEl = document.getElementById('pd-summary');
+    sumEl.innerHTML = parsed.summary?.length
+      ? '<ul>' + parsed.summary.map(s => `<li>${esc(s)}</li>`).join('') + '</ul>'
+      : '—';
+
+    document.getElementById('btn-save-distill').classList.add('visible');
+    showToast('✓ Đã chắt lọc — chọn cách lưu', 'success');
+
+  } catch(err) {
+    console.error(err);
+    document.getElementById('preview-loading').style.display = 'none';
+    showToast('Thất bại: ' + err.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ────────────────────────────────────────────────────
+// STEP 2A: SAVE RAW
+// ────────────────────────────────────────────────────
+async function saveRaw() {
+  const raw = document.getElementById('raw-input').value.trim();
+  if (!raw && !window._pendingOcrText) { showToast('Chưa có gì để lưu', 'error'); return; }
+  const userTitle  = document.getElementById('capture-title').value;
+  const userCat    = document.getElementById('capture-category').value || CATEGORIES[CATEGORIES.length - 1];
+  const title      = resolveTitle(userTitle, null, raw || window._pendingOcrText);
+  const pendingAtts = (window._pendingAttachments || []).slice();
+  window._pendingAttachments = [];
+  renderAttachPreview();
+
+  await saveEntry({
+    id: Date.now().toString(), time: new Date().toISOString(),
+    user_id: USER_ID, app_id: APP_ID,
+    type: userCat, title,
+    summary: ['(lưu thô)'], coreIdea: '', keywords: [], raw,
+    ocr_text: window._pendingOcrText || '',  // Fix 2
+    attachments: pendingAtts, hasAttachments: pendingAtts.length > 0
+  });
+  showToast('✓ Đã lưu thô', 'success');
+  clearCapture();
+}
+
+// ────────────────────────────────────────────────────
+// STEP 2B: SAVE DISTILLED
+// ────────────────────────────────────────────────────
+async function saveDistilled() {
+  if (!_pendingDistillResult) { showToast('Chưa có kết quả chắt lọc', 'error'); return; }
+  const { parsed, detectedType, raw } = _pendingDistillResult;
+  const userTitle   = document.getElementById('capture-title').value;
+  const userCat     = document.getElementById('capture-category').value;
+  const resolvedType = detectedType || (userCat ? userCat : normalizeType(parsed.type));
+  const title       = resolveTitle(userTitle, parsed.coreIdea, raw);
+  const pendingAtts = (window._pendingAttachments || []).slice();
+  window._pendingAttachments = [];
+  renderAttachPreview();
+
+  const entry = {
+    id:             Date.now().toString(),
+    time:           new Date().toISOString(),
+    user_id:        USER_ID,
+    app_id:         APP_ID,
+    type:           resolvedType,
+    title,
+    summary:        Array.isArray(parsed.summary) ? parsed.summary.filter(s => s.trim()) : [],
+    coreIdea:       (parsed.coreIdea || '').trim(),
+    keywords:       Array.isArray(parsed.keywords) ? parsed.keywords : [],
+    raw,
+    ocr_text:       _pendingDistillResult.ocr_text || '',  // Fix 2
+    attachments:    pendingAtts,
+    hasAttachments: pendingAtts.length > 0
+  };
+
+  if (!validateEntry(entry)) return;
+  await saveEntry(entry);
+  showToast('✓ Đã lưu chắt lọc', 'success');
+  clearCapture();
+}
+
+// ── Keep quickSaveRaw as alias for backward compat (keyboard shortcut etc.)
+async function quickSaveRaw() { await saveRaw(); }
+
+async function distillAndSave() { await runDistill(); } // legacy alias
 
 function formatTime(iso) {
   const d     = new Date(iso);
@@ -2058,11 +2640,12 @@ function showToast(msg, type = '') {
 
 // Keyboard shortcuts
 document.addEventListener('keydown', e => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); distillAndSave(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runDistill(); }
   if (e.key === 'Escape') {
     closeEntrySheet();
     closeSettingsSheet();
     closeBackupSheet();
+    closeImgZoom();
   }
 });
 </script>

@@ -1094,6 +1094,17 @@ window._fbUploadImage = async function(blob) {
   const imgRef = sRef(storage, path);
   await uploadBytes(imgRef, blob, { contentType: 'image/jpeg' });
   const url = await getDownloadURL(imgRef);
+         // 👉 ADD ĐOẠN NÀY
+      window._pendingAttachments = window._pendingAttachments || [];
+      
+      window._pendingAttachments.push({
+        type: "image",
+        url: url,
+        path: path
+      });
+      
+      // 👉 DEBUG (optional)
+      console.log("ATTACHMENTS:", window._pendingAttachments);
   return { url, path };
 };
 
@@ -1612,6 +1623,9 @@ function clearCapture() {
 // ────────────────────────────────────────────────────
 async function saveEntry(entry) {
   entry._local = true; // flag: this entry was created locally, skip in onSnapshot
+   // 🔥 ADD ĐOẠN NÀY
+  entry.attachments = window._pendingAttachments || [];
+  entry.has_attachment = (window._pendingAttachments || []).length > 0;
   ideas.unshift(entry);
   window._app_ideas = ideas;
   cacheLocal();
@@ -1619,9 +1633,15 @@ async function saveEntry(entry) {
   renderList();
   if (window._fbReady) {
     const ok = await window._fbSaveEntry(entry);
-    if (ok) delete entry._local; // clean up after confirmed save
-    else showToast('Firebase thất bại — đã lưu local', 'warn');
-  }
+
+     if (ok) {
+       delete entry._local;
+   
+       // 🔥 ADD DÒNG NÀY
+       window._pendingAttachments = [];
+     } else {
+       showToast('Firebase thất bại - đã lưu local', 'warn');
+     }
 }
 
 async function deleteEntry(id) {

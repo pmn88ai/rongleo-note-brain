@@ -1094,17 +1094,6 @@ window._fbUploadImage = async function(blob) {
   const imgRef = sRef(storage, path);
   await uploadBytes(imgRef, blob, { contentType: 'image/jpeg' });
   const url = await getDownloadURL(imgRef);
-         // 👉 ADD ĐOẠN NÀY
-      window._pendingAttachments = window._pendingAttachments || [];
-      
-      window._pendingAttachments.push({
-        type: "image",
-        url: url,
-        path: path
-      });
-      
-      // 👉 DEBUG (optional)
-      console.log("ATTACHMENTS:", window._pendingAttachments);
   return { url, path };
 };
 
@@ -1369,8 +1358,42 @@ let currentEntryId = null;
 let currentFilter  = '__all__';
 let currentSearch  = '';
 let isLoadingMore  = false;
+// Global state — ensure never undefined
 window._pendingAttachments = [];
+window._pendingOcrText     = '';
+window._editAttachments    = [];
 window._app_ideas = ideas; // expose for onSnapshot
+
+// ────────────────────────────────────────────────────
+// OCR TEXT STATE + HELPERS (must be before init())
+// ────────────────────────────────────────────────────
+function updateOcrBadge() {
+  let badge = document.getElementById('ocr-badge');
+  if (!window._pendingOcrText) {
+    if (badge) badge.remove();
+    return;
+  }
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.id = 'ocr-badge';
+    badge.style.cssText = 'font-family:"Space Mono",monospace;font-size:10px;color:var(--accent2);' +
+      'padding:2px 8px;border:1px solid rgba(53,241,200,.3);border-radius:2px;white-space:nowrap;cursor:pointer;margin-left:6px';
+    badge.title = 'Click để xem nội dung OCR';
+    badge.onclick = () => {
+      const preview = window._pendingOcrText.substring(0, 300);
+      alert('OCR text:\n\n' + preview + (window._pendingOcrText.length > 300 ? '\n...' : ''));
+    };
+    const statusEl = document.getElementById('img-status');
+    if (statusEl && statusEl.parentNode) statusEl.parentNode.insertBefore(badge, statusEl.nextSibling);
+  }
+  const lines = window._pendingOcrText.split('\n').length;
+  badge.textContent = '📝 OCR: ' + lines + ' dòng';
+}
+
+function clearOcrText() {
+  window._pendingOcrText = '';
+  updateOcrBadge();
+}
 
 // ────────────────────────────────────────────────────
 // NAVIGATION (3-page SPA)
@@ -1602,18 +1625,21 @@ function safeParsegroqJSON(text) {
 
 function clearCapture() {
   document.getElementById('raw-input').value = '';
-  document.getElementById('link-input').value = '';
-  document.getElementById('capture-title').value = '';
+  const linkEl = document.getElementById('link-input');
+  if (linkEl) linkEl.value = '';
+  const titleEl = document.getElementById('capture-title');
+  if (titleEl) titleEl.value = '';
   updateCharCount();
   document.getElementById('preview-block').classList.remove('visible');
   document.getElementById('btn-save-distill').classList.remove('visible');
   _pendingDistillResult = null;
   _distillInputSnapshot = '';
   window._pendingAttachments = [];
-  window._pendingOcrText = '';  // Fix 2: clear OCR
+  window._pendingOcrText = '';
   clearOcrText();
   renderAttachPreview();
-  document.getElementById('img-status').textContent = '';
+  const statusEl = document.getElementById('img-status');
+  if (statusEl) statusEl.textContent = '';
 }
 
 // (showResult replaced by preview block in v2)
@@ -1622,26 +1648,30 @@ function clearCapture() {
 // STORAGE
 // ────────────────────────────────────────────────────
 async function saveEntry(entry) {
-  entry._local = true; // flag: this entry was created locally, skip in onSnapshot
-   // 🔥 ADD ĐOẠN NÀY
-  entry.attachments = window._pendingAttachments || [];
-  entry.has_attachment = (window._pendingAttachments || []).length > 0;
-  ideas.unshift(entry);
-  window._app_ideas = ideas;
-  cacheLocal();
-  renderFilterRow();
-  renderList();
-  if (window._fbReady) {
-    const ok = await window._fbSaveEntry(entry);
+  try {
+    entry._local = true;
 
-     if (ok) {
-       delete entry._local;
-   
-       // 🔥 ADD DÒNG NÀY
-       window._pendingAttachments = [];
-     } else {
-       showToast('Firebase thất bại - đã lưu local', 'warn');
-     }
+    // Ensure attachments fields are always set (defensive)
+    if (!Array.isArray(entry.attachments)) entry.attachments = [];
+    entry.hasAttachments = entry.attachments.length > 0;
+
+    console.log('[DISTILL] saveEntry — attachments:', entry.attachments.length, entry.attachments);
+
+    ideas.unshift(entry);
+    window._app_ideas = ideas;
+    cacheLocal();
+    renderFilterRow();
+    renderList();
+
+    if (window._fbReady) {
+      const ok = await window._fbSaveEntry(entry);
+      if (ok) delete entry._local;
+      else showToast('Firebase thất bại — đã lưu local', 'warn');
+    }
+  } catch(err) {
+    console.error('[DISTILL] saveEntry CRASH:', err);
+    showToast('Lỗi khi lưu: ' + err.message, 'error');
+  }
 }
 
 async function deleteEntry(id) {
@@ -2083,38 +2113,6 @@ async function handleImageUpload(input) {
     statusEl.textContent = '⚠ Không trích xuất được nội dung nào';
     setTimeout(() => { statusEl.textContent = ''; }, 4000);
   }
-}
-
-// ────────────────────────────────────────────────────
-// OCR TEXT MANAGEMENT (Fix 2)
-// ────────────────────────────────────────────────────
-window._pendingOcrText = '';
-
-function updateOcrBadge() {
-  let badge = document.getElementById('ocr-badge');
-  if (!window._pendingOcrText) {
-    if (badge) badge.remove();
-    return;
-  }
-  if (!badge) {
-    badge = document.createElement('span');
-    badge.id = 'ocr-badge';
-    badge.style.cssText = 'font-family:"Space Mono",monospace;font-size:10px;color:var(--accent2);' +
-      'padding:2px 8px;border:1px solid rgba(53,241,200,.3);border-radius:2px;white-space:nowrap;cursor:pointer';
-    badge.title = 'Click để xem nội dung OCR';
-    badge.onclick = () => {
-      const preview = window._pendingOcrText.substring(0, 300);
-      alert('OCR text (sẽ combine khi Chắt Lọc):\n\n' + preview + (window._pendingOcrText.length > 300 ? '\n...' : ''));
-    };
-    document.getElementById('img-status').after(badge);
-  }
-  const lines = window._pendingOcrText.split('\n').length;
-  badge.textContent = `📝 OCR: ${lines} dòng`;
-}
-
-function clearOcrText() {
-  window._pendingOcrText = '';
-  updateOcrBadge();
 }
 
 // ────────────────────────────────────────────────────
@@ -2579,17 +2577,21 @@ async function saveRaw() {
   const userTitle  = document.getElementById('capture-title').value;
   const userCat    = document.getElementById('capture-category').value || CATEGORIES[CATEGORIES.length - 1];
   const title      = resolveTitle(userTitle, null, raw || window._pendingOcrText);
+
+  // Snapshot BEFORE clearing
   const pendingAtts = (window._pendingAttachments || []).slice();
-  window._pendingAttachments = [];
-  renderAttachPreview();
+  const ocrSnapshot = window._pendingOcrText || '';
+
+  console.log('[DISTILL] saveRaw — pendingAtts:', pendingAtts.length, pendingAtts);
 
   await saveEntry({
     id: Date.now().toString(), time: new Date().toISOString(),
     user_id: USER_ID, app_id: APP_ID,
     type: userCat, title,
     summary: ['(lưu thô)'], coreIdea: '', keywords: [], raw,
-    ocr_text: window._pendingOcrText || '',  // Fix 2
-    attachments: pendingAtts, hasAttachments: pendingAtts.length > 0
+    ocr_text:       ocrSnapshot,
+    attachments:    pendingAtts,
+    hasAttachments: pendingAtts.length > 0
   });
   showToast('✓ Đã lưu thô', 'success');
   clearCapture();
@@ -2600,14 +2602,16 @@ async function saveRaw() {
 // ────────────────────────────────────────────────────
 async function saveDistilled() {
   if (!_pendingDistillResult) { showToast('Chưa có kết quả chắt lọc', 'error'); return; }
-  const { parsed, detectedType, raw } = _pendingDistillResult;
+  const { parsed, detectedType, raw, ocr_text: ocrSnapshot } = _pendingDistillResult;
   const userTitle   = document.getElementById('capture-title').value;
   const userCat     = document.getElementById('capture-category').value;
   const resolvedType = detectedType || (userCat ? userCat : normalizeType(parsed.type));
   const title       = resolveTitle(userTitle, parsed.coreIdea, raw);
+
+  // Snapshot BEFORE clearing
   const pendingAtts = (window._pendingAttachments || []).slice();
-  window._pendingAttachments = [];
-  renderAttachPreview();
+
+  console.log('[DISTILL] saveDistilled — pendingAtts:', pendingAtts.length, pendingAtts);
 
   const entry = {
     id:             Date.now().toString(),
@@ -2620,7 +2624,7 @@ async function saveDistilled() {
     coreIdea:       (parsed.coreIdea || '').trim(),
     keywords:       Array.isArray(parsed.keywords) ? parsed.keywords : [],
     raw,
-    ocr_text:       _pendingDistillResult.ocr_text || '',  // Fix 2
+    ocr_text:       ocrSnapshot || '',
     attachments:    pendingAtts,
     hasAttachments: pendingAtts.length > 0
   };

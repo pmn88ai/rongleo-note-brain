@@ -1051,9 +1051,23 @@ mark.hl { background: rgba(53,241,200,.2); color: var(--accent2); border-radius:
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- ═══════════════════════ SYNC DOT (must be before Firebase module) ═══════════════════════ -->
+<script>
+// _setSyncDot MUST be defined before the Firebase ES module executes.
+// ES modules are deferred but run before DOMContentLoaded — the regular
+// <script> after the module block would be too late for the init try/catch.
+window._setSyncDot = function(state) {
+  const el = document.getElementById('sync-dot');
+  if (!el) return;
+  el.className = 'sync-dot ' + state;
+  const labels = { ok:'Firebase OK', err:'Firebase lỗi (local)', syncing:'Đang đồng bộ...', '':'' };
+  el.title = labels[state] || '';
+};
+</script>
+
 <!-- ═══════════════════════ FIREBASE MODULE ═══════════════════════ -->
 <script type="module">
-import { initializeApp }        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore, collection, addDoc, getDocs, deleteDoc,
   doc, updateDoc, setDoc, getDoc, serverTimestamp,
@@ -1075,12 +1089,14 @@ const firebaseConfig = {
 
 let db = null, storage = null;
 try {
-  const app = initializeApp(firebaseConfig);
+  // getApps() guard: prevents "Firebase App named '[DEFAULT]' already exists" on hot reload
+  const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
   db      = getFirestore(app);
   storage = getStorage(app);
   window._setSyncDot('ok');
+  console.log('[Firebase] init OK');
 } catch(e) {
-  console.warn('Firebase init failed:', e);
+  console.error('[Firebase] init FAILED:', e.code, e.message);
   window._setSyncDot('err');
 }
 
@@ -1299,17 +1315,6 @@ window.dispatchEvent(new Event('fb-ready'));
 <!-- ═══════════════════════ MAIN APP ═══════════════════════ -->
 <script>
 'use strict';
-
-// ────────────────────────────────────────────────────
-// SYNC DOT
-// ────────────────────────────────────────────────────
-window._setSyncDot = function(state) {
-  const el = document.getElementById('sync-dot');
-  if (!el) return;
-  el.className = 'sync-dot ' + state;
-  const labels = { ok:'Firebase OK', err:'Firebase lỗi (local)', syncing:'Đang đồng bộ...', '':'' };
-  el.title = labels[state] || '';
-};
 
 // ────────────────────────────────────────────────────
 // IDENTITY (Phase 1)
@@ -2404,6 +2409,41 @@ function exportAllJSON() {
   showToast('✓ Đã xuất ' + ideas.length + ' entries', 'success');
 }
 
+// ────────────────────────────────────────────────────
+// MERGE LOGIC
+// ────────────────────────────────────────────────────
+function mergeIdeas(arr1, arr2) {
+  // Step 1: combine, dedupe by id (keep newer time)
+  const byId = {};
+  for (const e of [...arr1, ...arr2]) {
+    if (!e || !e.id) continue;
+    const existing = byId[e.id];
+    if (!existing || (e.time || '') > (existing.time || '')) {
+      byId[e.id] = e;
+    }
+  }
+
+  // Step 2: dedupe by coreIdea (trim+lower), keep newer time
+  const byCoreIdea = {};
+  const noCoreIdea = [];
+  for (const e of Object.values(byId)) {
+    const ci = (e.coreIdea || '').trim().toLowerCase();
+    if (!ci) { noCoreIdea.push(e); continue; }
+    const existing = byCoreIdea[ci];
+    if (!existing || (e.time || '') > (existing.time || '')) {
+      byCoreIdea[ci] = e;
+    }
+  }
+
+  // Step 3: combine + sort desc
+  const merged = [...Object.values(byCoreIdea), ...noCoreIdea];
+  merged.sort((a, b) => (b.time || '') > (a.time || '') ? 1 : -1);
+
+  // Strip internal flags
+  merged.forEach(e => { delete e._local; });
+  return merged;
+}
+
 function importJSON(input) {
   const file = input.files[0];
   if (!file) return;
@@ -2413,20 +2453,49 @@ function importJSON(input) {
       const data     = JSON.parse(e.target.result);
       const incoming = Array.isArray(data) ? data : (data.ideas || []);
       if (!incoming.length) throw new Error('File không hợp lệ');
-      if (!confirm(`Nhập ${incoming.length} entries? Dữ liệu hiện tại sẽ bị GHI ĐÈ.`)) return;
-      ideas = incoming;
+
+      // MERGE — không overwrite
+      const before  = ideas.length;
+      const merged  = mergeIdeas(ideas, incoming);
+      const added   = merged.length - before;
+
+      if (!confirm(
+        `Tìm thấy ${incoming.length} entries trong file.\n` +
+        `Sau merge: ${merged.length} entries (+${added} mới, ${incoming.length - added} trùng bỏ qua).\n\nTiếp tục?`
+      )) return;
+
+      ideas = merged;
       window._app_ideas = ideas;
       if (data.categories?.length) { CATEGORIES = data.categories; saveCategories(); }
       cacheLocal();
+      renderCaptureCategoryDropdown();
       renderFilterRow();
       renderList();
-      showToast('✓ Đã nhập ' + incoming.length + ' entries', 'success');
+      showToast(`✓ Merge xong: ${merged.length} entries (+${added} mới)`, 'success');
       closeBackupSheet();
-    } catch(err) { showToast('Lỗi đọc file JSON', 'error'); }
+    } catch(err) {
+      console.error('importJSON error:', err);
+      showToast('Lỗi đọc file JSON: ' + err.message, 'error');
+    }
   };
   reader.readAsText(file);
   input.value = '';
 }
+
+// Push all local ideas to Firestore (run from console: pushAllToFirestore())
+window.pushAllToFirestore = async function() {
+  if (!window._fbReady) { console.error('Firebase chưa ready'); return; }
+  const total = ideas.length;
+  let ok = 0, fail = 0;
+  console.log(`[PUSH] Bắt đầu push ${total} entries...`);
+  for (const entry of ideas) {
+    try {
+      const result = await window._fbSaveEntry({ ...entry });
+      if (result) ok++; else fail++;
+    } catch(e) { fail++; console.warn('[PUSH] lỗi entry', entry.id, e.message); }
+  }
+  console.log(`[PUSH] DONE — OK: ${ok} | Fail: ${fail} / ${total}`);
+};
 
 async function confirmClearAll() {
   if (!confirm('XOÁ TOÀN BỘ?\nSẽ xoá cả localStorage và Firestore. Không thể hoàn tác!')) return;
